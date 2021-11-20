@@ -9,10 +9,12 @@ REPO_PATH := github.com/hashicorp/db
 tools:
 	go generate -tags tools tools/tools.go
 
-
 fmt:
 	gofumpt -w $$(find . -name '*.go' | grep -v pb.go)
 
+test:
+	gotestsum -- ./... -count=1
+	cd tests; gotestsum -- ./... -count=1
 
 ### db tags requires protoc-gen-go v1.20.0 or later
 # GO111MODULE=on go get -u github.com/golang/protobuf/protoc-gen-go@v1.40
