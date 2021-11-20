@@ -52,13 +52,13 @@ func Test_TestSetup(t *testing.T) {
 		{
 			name:    "with-migration",
 			dialect: "sqlite",
-			opt:     []TestOption{WithTestMigration(testMigrationFn)},
+			opt:     []TestOption{WithTestDialect(Sqlite.String()), WithTestMigration(testMigrationFn)},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert := assert.New(t)
-			TestSetup(t, tt.dialect, tt.opt...)
+			TestSetup(t, tt.opt...)
 			if tt.validate != nil {
 				assert.True(tt.validate())
 			}
@@ -68,7 +68,7 @@ func Test_TestSetup(t *testing.T) {
 
 func Test_CreateDropTestTables(t *testing.T) {
 	t.Run("execute", func(t *testing.T) {
-		db, _ := TestSetup(t, Sqlite.String())
+		db, _ := TestSetup(t, WithTestDialect(Sqlite.String()))
 		TestCreateTables(t, db)
 		testDropTables(t, db)
 	})

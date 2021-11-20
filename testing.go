@@ -13,20 +13,24 @@ import (
 )
 
 // setup the tests (initialize the database one-time). Do not close the returned
-// db.  Supported test options: WithTestDatabaseUrl, and WithMigration
-func TestSetup(t *testing.T, dialect string, opt ...TestOption) (*DB, string) {
+// db.  Supported test options: WithTestDialect, WithTestDatabaseUrl, and
+// WithMigration
+func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	require := require.New(t)
 	var url string
 	var err error
 	ctx := context.Background()
 
 	opts := getTestOpts(opt...)
+	if opts.withDialect == "" {
+		opts.withDialect = Sqlite.String()
+	}
 
 	switch {
-	case dialect == Postgres.String() && opts.withTestDatabaseUrl == "":
+	case opts.withDialect == Postgres.String() && opts.withTestDatabaseUrl == "":
 		t.Fatal("missing postgres test db url")
 
-	case dialect == Sqlite.String() && opts.withTestDatabaseUrl == "":
+	case opts.withDialect == Sqlite.String() && opts.withTestDatabaseUrl == "":
 		tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
 		require.NoError(err)
 		t.Cleanup(func() {
@@ -40,12 +44,12 @@ func TestSetup(t *testing.T, dialect string, opt ...TestOption) (*DB, string) {
 	}
 
 	if opts.withTestMigration != nil {
-		err = opts.withTestMigration(ctx, dialect, url)
+		err = opts.withTestMigration(ctx, opts.withDialect, url)
 		if err != nil {
 			t.Fatalf("Couldn't init store on existing db: %v", err)
 		}
 	}
-	dbType, err := StringToDbType(dialect)
+	dbType, err := StringToDbType(opts.withDialect)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,12 +81,20 @@ type TestOption func(*testOptions)
 
 // options = how options are represented
 type testOptions struct {
+	withDialect         string
 	withTestDatabaseUrl string
 	withTestMigration   func(ctx context.Context, dialect, url string) error
 }
 
 func getDefaultTestOptions() testOptions {
 	return testOptions{}
+}
+
+// WithTestDialect provides a way to specify the test database dialect
+func WithTestDialect(dialect string) TestOption {
+	return func(o *testOptions) {
+		o.withDialect = dialect
+	}
 }
 
 // WithTestMigrationProvides a way to specify an option func which runs a

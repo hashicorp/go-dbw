@@ -1,19 +1,20 @@
-package db
+package db_test
 
 import (
 	"context"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/go-db"
 	"github.com/stretchr/testify/require"
 )
 
 func TestOpen(t *testing.T) {
 	ctx := context.Background()
-	_, url := TestSetup(t, "sqlite")
+	_, url := db.TestSetup(t)
 
 	type args struct {
-		dbType        DbType
+		dbType        db.DbType
 		connectionUrl string
 	}
 	tests := []struct {
@@ -24,7 +25,7 @@ func TestOpen(t *testing.T) {
 		{
 			name: "valid",
 			args: args{
-				dbType:        Sqlite,
+				dbType:        db.Sqlite,
 				connectionUrl: url,
 			},
 			wantErr: false,
@@ -32,7 +33,7 @@ func TestOpen(t *testing.T) {
 		{
 			name: "invalid",
 			args: args{
-				dbType:        Sqlite,
+				dbType:        db.Sqlite,
 				connectionUrl: "",
 			},
 			wantErr: true,
@@ -44,7 +45,7 @@ func TestOpen(t *testing.T) {
 			if tt.args.connectionUrl != "" {
 				t.Cleanup(func() { os.Remove(tt.args.connectionUrl + "-journal") })
 			}
-			got, err := Open(tt.args.dbType, tt.args.connectionUrl)
+			got, err := db.Open(tt.args.dbType, tt.args.connectionUrl)
 			defer func() {
 				if err == nil {
 					sqlDB, err := got.SqlDB(ctx)
