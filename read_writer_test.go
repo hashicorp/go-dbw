@@ -14,7 +14,6 @@ func TestDb_Exec(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		testCtx := context.Background()
 		conn, _ := db.TestSetup(t)
-		db.TestCreateTables(t, conn)
 		require := require.New(t)
 		w := db.New(conn)
 		id := db.TestId(t)

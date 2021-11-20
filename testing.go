@@ -2,9 +2,13 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
+
+	"github.com/xo/dburl"
 
 	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +17,8 @@ import (
 )
 
 // setup the tests (initialize the database one-time). Do not close the returned
-// db.  Supported test options: WithTestDialect, WithTestDatabaseUrl, and
-// WithMigration
+// db.  Supported test options: WithDebug, WithTestDialect, WithTestDatabaseUrl,
+// and WithMigration
 func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	require := require.New(t)
 	var url string
@@ -22,8 +26,20 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	ctx := context.Background()
 
 	opts := getTestOpts(opt...)
-	if opts.withDialect == "" {
+
+	switch strings.ToLower(os.Getenv("DB_DIALECT")) {
+	case "postgres":
+		opts.withDialect = Postgres.String()
+	case "sqlite":
 		opts.withDialect = Sqlite.String()
+	default:
+		if opts.withDialect == "" {
+			opts.withDialect = Sqlite.String()
+		}
+	}
+
+	if url := os.Getenv("DB_DSN"); url != "" {
+		opts.withTestDatabaseUrl = url
 	}
 
 	switch {
@@ -43,27 +59,54 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		url = opts.withTestDatabaseUrl
 	}
 
-	if opts.withTestMigration != nil {
-		err = opts.withTestMigration(ctx, opts.withDialect, url)
-		if err != nil {
-			t.Fatalf("Couldn't init store on existing db: %v", err)
-		}
+	switch opts.withDialect {
+	case Postgres.String():
+		u, err := dburl.Parse(opts.withTestDatabaseUrl)
+		require.NoError(err)
+		db, err := Open(Postgres, u.DSN)
+		require.NoError(err)
+		rw := New(db)
+		tmpDbName, err := newId("go-db-tmp")
+		require.NoError(err)
+		_, err = rw.Exec(ctx, fmt.Sprintf(`create database %s`, tmpDbName), nil)
+		require.NoError(err)
+		t.Cleanup(func() {
+			_, err = rw.Exec(ctx, fmt.Sprintf(`drop database %s`, tmpDbName), nil)
+			assert.NoError(t, err)
+		})
+		_, err = rw.Exec(ctx, fmt.Sprintf("grant all privileges on database %s to %s", tmpDbName, u.User), nil)
+		require.NoError(err)
+
+		namesSegs := strings.Split(strings.TrimPrefix(u.Path, "/"), "?")
+		require.Truef(len(namesSegs) > 0, "couldn't determine db name from URL")
+		namesSegs[0] = tmpDbName
+		u.Path = strings.Join(namesSegs, "?")
+		opts.withTestDatabaseUrl, err = dburl.GenPostgres(u)
+		require.NoError(err)
 	}
+
 	dbType, err := StringToDbType(opts.withDialect)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(err)
+
 	db, err := Open(dbType, url)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(err)
+
 	db.Logger.LogMode(logger.Error)
 	t.Cleanup(func() {
-		testDropTables(t, db)
 		sqlDB, err := db.SqlDB(ctx)
 		assert.NoError(t, err)
 		assert.NoError(t, sqlDB.Close(), "Got error closing db.")
 	})
+
+	if opts.withTestDebug || strings.ToLower(os.Getenv("DEBUG")) == "true" {
+		db.Debug(true)
+	}
+
+	if opts.withTestMigration != nil {
+		err = opts.withTestMigration(ctx, opts.withDialect, url)
+		require.NoError(err)
+	}
+	TestCreateTables(t, db)
 	return db, url
 }
 
@@ -84,6 +127,7 @@ type testOptions struct {
 	withDialect         string
 	withTestDatabaseUrl string
 	withTestMigration   func(ctx context.Context, dialect, url string) error
+	withTestDebug       bool
 }
 
 func getDefaultTestOptions() testOptions {
@@ -127,8 +171,13 @@ func TestCreateTables(t *testing.T, conn *DB) {
 	require := require.New(t)
 	testCtx := context.Background()
 	rw := New(conn)
-	_, err := rw.Exec(testCtx, testQueryCreateTablesSqlite, nil)
-	require.NoError(err)
+	switch conn.Dialector.Name() {
+	case "sqlite":
+		_, err := rw.Exec(testCtx, testQueryCreateTablesSqlite, nil)
+		require.NoError(err)
+	default:
+		t.Fatalf("unknown dialect: %s", conn.Dialector.Name())
+	}
 }
 
 func testDropTables(t *testing.T, conn *DB) {
@@ -136,8 +185,13 @@ func testDropTables(t *testing.T, conn *DB) {
 	require := require.New(t)
 	testCtx := context.Background()
 	rw := New(conn)
-	_, err := rw.Exec(testCtx, testQueryDropTablesSqlite, nil)
-	require.NoError(err)
+	switch conn.Dialector.Name() {
+	case "sqlite":
+		_, err := rw.Exec(testCtx, testQueryDropTablesSqlite, nil)
+		require.NoError(err)
+	default:
+		t.Fatalf("unknown dialect: %s", conn.Dialector.Name())
+	}
 }
 
 const (

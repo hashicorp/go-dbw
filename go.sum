@@ -423,6 +423,8 @@ github.com/twitchtv/twirp v8.1.0+incompatible h1:KGXanpa9LXdVE/V5P/tA27rkKFmXRGC
 github.com/twitchtv/twirp v8.1.0+incompatible/go.mod h1:RRJoFSAmTEh2weEqWtpPE3vFK5YBhA6bqp2l1kfCC5A=
 github.com/urfave/cli/v2 v2.3.0 h1:qph92Y649prgesehzOrQjdWyxFOp/QVM+6imKHad91M=
 github.com/urfave/cli/v2 v2.3.0/go.mod h1:LJmUH05zAU44vOAcrfzZQKsZbVcdbOG8rtL3/XcUArI=
+github.com/xo/dburl v0.9.0 h1:ME8QfRqZz/YDwf+VVEe9sq4wgEZCAOdYcUTeuAf+wQQ=
+github.com/xo/dburl v0.9.0/go.mod h1:7Uupe87dIDxNrbKFRrpw6bAf2l3/rqU42iwlpq1nyjY=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

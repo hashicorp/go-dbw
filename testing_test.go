@@ -69,7 +69,7 @@ func Test_TestSetup(t *testing.T) {
 func Test_CreateDropTestTables(t *testing.T) {
 	t.Run("execute", func(t *testing.T) {
 		db, _ := TestSetup(t, WithTestDialect(Sqlite.String()))
-		TestCreateTables(t, db)
 		testDropTables(t, db)
+		TestCreateTables(t, db)
 	})
 }
