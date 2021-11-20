@@ -113,7 +113,7 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to open database: %w", err)
 	}
-	opts := GetOpts(opt...)
+	opts := getOpts(opt...)
 	if opts.withGormFormatter != nil {
 		newLogger := logger.New(
 			getGormLogger(opts.withGormFormatter),

@@ -25,7 +25,7 @@ func newId(prefix string, opt ...Option) (string, error) {
 	}
 	var publicId string
 	var err error
-	opts := GetOpts(opt...)
+	opts := getOpts(opt...)
 	if len(opts.withPrngValues) > 0 {
 		sum := blake2b.Sum256([]byte(strings.Join(opts.withPrngValues, "|")))
 		reader := bytes.NewReader(sum[0:])

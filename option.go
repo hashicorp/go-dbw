@@ -4,8 +4,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-// GetOpts - iterate the inbound Options and return a struct.
-func GetOpts(opt ...Option) Options {
+// getOpts - iterate the inbound Options and return a struct.
+func getOpts(opt ...Option) Options {
 	opts := getDefaultOptions()
 	for _, o := range opt {
 		o(&opts)
