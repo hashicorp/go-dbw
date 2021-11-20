@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/hashicorp/db"
+	"github.com/hashicorp/go-db"
 	"github.com/stretchr/testify/require"
 )
 
