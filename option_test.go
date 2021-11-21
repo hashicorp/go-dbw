@@ -180,4 +180,24 @@ func Test_getOpts(t *testing.T) {
 		testOpts.withRowsAffected = &rowsAffected
 		assert.Equal(opts, testOpts)
 	})
+	t.Run("WithBeforeWrite", func(t *testing.T) {
+		assert := assert.New(t)
+		// test defaults
+		opts := getOpts()
+		assert.Nil(opts.withBeforeWrite)
+
+		fn := func() error { return nil }
+		opts = getOpts(WithBeforeWrite(fn))
+		assert.NotNil(opts.withBeforeWrite)
+	})
+	t.Run("WithAfterWrite", func(t *testing.T) {
+		assert := assert.New(t)
+		// test defaults
+		opts := getOpts()
+		assert.Nil(opts.withAfterWrite)
+
+		fn := func() error { return nil }
+		opts = getOpts(WithAfterWrite(fn))
+		assert.NotNil(opts.withAfterWrite)
+	})
 }
