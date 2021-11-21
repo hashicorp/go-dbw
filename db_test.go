@@ -42,9 +42,11 @@ func TestOpen(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if tt.args.connectionUrl != "" {
-				t.Cleanup(func() { os.Remove(tt.args.connectionUrl + "-journal") })
-			}
+			t.Cleanup(func() {
+				os.Remove(tt.args.connectionUrl + "-journal")
+				os.Remove(tt.args.connectionUrl)
+			})
+
 			got, err := db.Open(tt.args.dbType, tt.args.connectionUrl)
 			defer func() {
 				if err == nil {
