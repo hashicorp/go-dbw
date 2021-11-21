@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"reflect"
 )
 
 const (
@@ -34,4 +35,15 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 		return NoRowsAffected, fmt.Errorf("%s: %w", op, gormDb.Error)
 	}
 	return int(gormDb.RowsAffected), nil
+}
+
+func isNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+		return reflect.ValueOf(i).IsNil()
+	}
+	return false
 }
