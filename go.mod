@@ -12,6 +12,7 @@ require (
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/oligot/go-mod-upgrade v0.6.1
 	github.com/stretchr/testify v1.7.0
+	github.com/xo/dburl v0.9.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/tools v0.1.8-0.20211102182255-bb4add04ddef
 	google.golang.org/protobuf v1.27.1
@@ -60,7 +61,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/twitchtv/twirp v8.1.0+incompatible // indirect
 	github.com/urfave/cli/v2 v2.3.0 // indirect
-	github.com/xo/dburl v0.9.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
