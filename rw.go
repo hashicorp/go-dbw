@@ -34,6 +34,9 @@ func New(underlying *DB) *RW {
 // supported.
 func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...Option) (int, error) {
 	const op = "db.Exec"
+	if rw.underlying == nil {
+		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
+	}
 	if sql == "" {
 		return NoRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}

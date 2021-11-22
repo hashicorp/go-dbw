@@ -6,14 +6,15 @@ import (
 	"testing"
 
 	"github.com/hashicorp/go-dbw"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDb_Exec(t *testing.T) {
 	t.Parallel()
+	testCtx := context.Background()
+	conn, _ := dbw.TestSetup(t)
 	t.Run("update", func(t *testing.T) {
-		testCtx := context.Background()
-		conn, _ := dbw.TestSetup(t)
 		require := require.New(t)
 		w := dbw.New(conn)
 		id := dbw.TestId(t)
@@ -33,5 +34,26 @@ func TestDb_Exec(t *testing.T) {
 			})
 		require.NoError(err)
 		require.Equal(1, rowsAffected)
+	})
+	t.Run("missing-sql", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.New(conn)
+		got, err := rw.Exec(testCtx, "", nil)
+		require.Error(err)
+		assert.Zero(got)
+	})
+	t.Run("missing-underlying-db", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.RW{}
+		got, err := rw.Exec(testCtx, "", nil)
+		require.Error(err)
+		assert.Zero(got)
+	})
+	t.Run("bad-sql", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.New(conn)
+		got, err := rw.Exec(testCtx, "insert from", nil)
+		require.Error(err)
+		assert.Zero(got)
 	})
 }

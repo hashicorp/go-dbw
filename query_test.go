@@ -42,4 +42,25 @@ func TestDb_Query(t *testing.T) {
 			assert.Equal(publicId, u.PublicId)
 		}
 	})
+	t.Run("missing-sql", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.New(conn)
+		got, err := rw.Query(testCtx, "", nil)
+		require.Error(err)
+		assert.Zero(got)
+	})
+	t.Run("missing-underlying-db", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.RW{}
+		got, err := rw.Query(testCtx, "", nil)
+		require.Error(err)
+		assert.Zero(got)
+	})
+	t.Run("bad-sql", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		rw := dbw.New(conn)
+		got, err := rw.Query(testCtx, "from", nil)
+		require.Error(err)
+		assert.Zero(got)
+	})
 }
