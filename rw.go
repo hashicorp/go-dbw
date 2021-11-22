@@ -151,12 +151,48 @@ func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Opti
 	return strings.Join(where, " and "), args, nil
 }
 
-func (_ *RW) LookupById(ctx context.Context, resource interface{}, opt ...Option) error {
-	panic("todo")
-}
-
-func (_ *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error {
-	panic("todo")
+func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
+	const op = "db.primaryKeysWhere"
+	var fieldNames []string
+	var fieldValues []interface{}
+	tx := rw.underlying.Model(i)
+	if err := tx.Statement.Parse(i); err != nil {
+		return "", nil, fmt.Errorf("%s: %w", op, err)
+	}
+	switch resourceType := i.(type) {
+	case ResourcePublicIder:
+		if resourceType.GetPublicId() == "" {
+			return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
+		}
+		fieldValues = []interface{}{resourceType.GetPublicId()}
+		fieldNames = []string{"public_id"}
+	case ResourcePrivateIder:
+		if resourceType.GetPrivateId() == "" {
+			return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
+		}
+		fieldValues = []interface{}{resourceType.GetPrivateId()}
+		fieldNames = []string{"private_id"}
+	default:
+		v := reflect.ValueOf(i)
+		for _, f := range tx.Statement.Schema.PrimaryFields {
+			if f.PrimaryKey {
+				val, isZero := f.ValueOf(v)
+				if isZero {
+					return "", nil, fmt.Errorf("%s: primary field %s is zero: %w", op, f.Name, ErrInvalidParameter)
+				}
+				fieldNames = append(fieldNames, f.DBName)
+				fieldValues = append(fieldValues, val)
+			}
+		}
+	}
+	if len(fieldNames) == 0 {
+		return "", nil, fmt.Errorf("%s: no primary key(s) for %t: %w", op, i, ErrInvalidParameter)
+	}
+	clauses := make([]string, 0, len(fieldNames))
+	for _, col := range fieldNames {
+		clauses = append(clauses, fmt.Sprintf("%s = ?", col))
+	}
+	return strings.Join(clauses, " and "), fieldValues, nil
 }
 
 func (_ *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error {

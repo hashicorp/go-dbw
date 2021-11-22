@@ -186,7 +186,7 @@ func Test_getOpts(t *testing.T) {
 		opts := getOpts()
 		assert.Nil(opts.withBeforeWrite)
 
-		fn := func() error { return nil }
+		fn := func(interface{}) error { return nil }
 		opts = getOpts(WithBeforeWrite(fn))
 		assert.NotNil(opts.withBeforeWrite)
 	})
@@ -196,7 +196,7 @@ func Test_getOpts(t *testing.T) {
 		opts := getOpts()
 		assert.Nil(opts.withAfterWrite)
 
-		fn := func() error { return nil }
+		fn := func(interface{}) error { return nil }
 		opts = getOpts(WithAfterWrite(fn))
 		assert.NotNil(opts.withAfterWrite)
 	})

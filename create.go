@@ -40,7 +40,7 @@ type VetForWriter interface {
 func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	const op = "db.Create"
 	if rw.underlying == nil {
-		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
+		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
 	if isNil(i) {
 		return fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
@@ -118,7 +118,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	}
 
 	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(); err != nil {
+		if err := opts.withBeforeWrite(i); err != nil {
 			return fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
@@ -133,7 +133,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 		switch {
 		case onConflictDoNothing && tx.RowsAffected == 0:
 		default:
-			if err := opts.withAfterWrite(); err != nil {
+			if err := opts.withAfterWrite(i); err != nil {
 				return fmt.Errorf("%s: error after write: %w", op, err)
 			}
 		}

@@ -18,8 +18,8 @@ type Option func(*Options)
 
 // Options - how Options are represented.
 type Options struct {
-	withBeforeWrite func() error
-	withAfterWrite  func() error
+	withBeforeWrite func(i interface{}) error
+	withAfterWrite  func(i interface{}) error
 
 	withLookup bool
 	// WithLimit must be accessible in other packages.
@@ -61,16 +61,18 @@ func getDefaultOptions() Options {
 }
 
 // WithBeforeWrite provides and option to provide a func to be called before a
-// write operation.
-func WithBeforeWrite(fn func() error) Option {
+// write operation. The i interface{} passed at runtime will be the resource
+// being written.
+func WithBeforeWrite(fn func(i interface{}) error) Option {
 	return func(o *Options) {
 		o.withBeforeWrite = fn
 	}
 }
 
 // WithAfterWrite provides and option to provide a func to be called after a
-// write operation
-func WithAfterWrite(fn func() error) Option {
+// write operation.  The i interface{} passed at runtime will be the resource
+// being written.
+func WithAfterWrite(fn func(i interface{}) error) Option {
 	return func(o *Options) {
 		o.withAfterWrite = fn
 	}
