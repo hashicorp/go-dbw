@@ -43,6 +43,7 @@ type Options struct {
 
 	withGormFormatter      hclog.Logger
 	withMaxOpenConnections int
+	withMinOpenConnections int
 
 	// withDebug indicates that the given operation should invoke Gorm's debug
 	// mode
@@ -153,10 +154,18 @@ func WithGormFormatter(l hclog.Logger) Option {
 }
 
 // WithMaxOpenConnections specifices and optional max open connections for the
-// database
+// database.  A value of zero equals unlimited connections
 func WithMaxOpenConnections(max int) Option {
 	return func(o *Options) {
 		o.withMaxOpenConnections = max
+	}
+}
+
+// WithMinOpenConnections specifices and optional min open connections for the
+// database.  A value of zero means that there is no min.
+func WithMinOpenConnections(max int) Option {
+	return func(o *Options) {
+		o.withMinOpenConnections = max
 	}
 }
 

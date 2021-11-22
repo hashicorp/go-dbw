@@ -200,4 +200,28 @@ func Test_getOpts(t *testing.T) {
 		opts = getOpts(WithAfterWrite(fn))
 		assert.NotNil(opts.withAfterWrite)
 	})
+	t.Run("WithMaxOpenConnections", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default of 0
+		opts := getOpts()
+		testOpts := getDefaultOptions()
+		testOpts.withMaxOpenConnections = 0
+		assert.Equal(opts, testOpts)
+		opts = getOpts(WithMaxOpenConnections(1))
+		testOpts = getDefaultOptions()
+		testOpts.withMaxOpenConnections = 1
+		assert.Equal(opts, testOpts)
+	})
+	t.Run("WithMinOpenConnections", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default of 0
+		opts := getOpts()
+		testOpts := getDefaultOptions()
+		testOpts.withMinOpenConnections = 0
+		assert.Equal(opts, testOpts)
+		opts = getOpts(WithMinOpenConnections(1))
+		testOpts = getDefaultOptions()
+		testOpts.withMinOpenConnections = 1
+		assert.Equal(opts, testOpts)
+	})
 }

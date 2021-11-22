@@ -125,8 +125,8 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 		db = db.Session(&gorm.Session{Logger: newLogger})
 	}
 	if opts.withMaxOpenConnections > 0 {
-		if dialect.Name() == "postgres" && opts.withMaxOpenConnections == 1 {
-			return nil, fmt.Errorf("unable to create db object with dialect %s: %s", dialect, "max_open_connections must be unlimited by setting 0 or at least 2")
+		if opts.withMinOpenConnections > 0 && (opts.withMaxOpenConnections < opts.withMinOpenConnections) {
+			return nil, fmt.Errorf("unable to create db object with dialect %s: %s", dialect, fmt.Sprintf("max_open_connections must be unlimited by setting 0 or at least %d", opts.withMinOpenConnections))
 		}
 		underlyingDB, err := db.DB()
 		if err != nil {
@@ -135,22 +135,6 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 		underlyingDB.SetMaxOpenConns(opts.withMaxOpenConnections)
 	}
 	return &DB{db}, nil
-}
-
-func GetGormLogFormatter(log hclog.Logger) func(values ...interface{}) (messages []interface{}) {
-	const op = "db.GetGormLogFormatter"
-	return func(values ...interface{}) (messages []interface{}) {
-		if len(values) > 2 && values[0].(string) == "log" {
-			switch values[2].(type) {
-			case *pgconn.PgError:
-				if log.IsTrace() {
-					log.Trace("error from database adapter", "location", values[1], "error", values[2])
-				}
-			}
-			return nil
-		}
-		return nil
-	}
 }
 
 type gormLogger struct {

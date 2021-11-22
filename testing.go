@@ -94,9 +94,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 
 	db.Logger.LogMode(logger.Error)
 	t.Cleanup(func() {
-		sqlDB, err := db.SqlDB(ctx)
-		assert.NoError(t, err)
-		assert.NoError(t, sqlDB.Close(), "Got error closing db.")
+		assert.NoError(t, db.Close(ctx), "Got error closing db.")
 	})
 
 	if opts.withTestDebug || strings.ToLower(os.Getenv("DEBUG")) == "true" {
