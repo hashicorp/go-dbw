@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -13,10 +14,16 @@ const (
 	DefaultLimit = 10000
 )
 
-// RW uses a gorm DB connection for read/write
+// RW uses a DB connection for read/write
 type RW struct {
 	underlying *DB
 }
+
+// ensure that RW implements the interfaces of: Reader and Writer
+var (
+	_ Reader = (*RW)(nil)
+	_ Writer = (*RW)(nil)
+)
 
 func New(underlying *DB) *RW {
 	return &RW{underlying: underlying}
@@ -37,6 +44,11 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 	return int(gormDb.RowsAffected), nil
 }
 
+func setFieldsToNil(i interface{}, fieldNames []string) {
+	// Note: error cases are not handled
+	_ = Clear(i, fieldNames, 2)
+}
+
 func isNil(i interface{}) bool {
 	if i == nil {
 		return true
@@ -46,4 +58,128 @@ func isNil(i interface{}) bool {
 		return reflect.ValueOf(i).IsNil()
 	}
 	return false
+}
+
+func contains(ss []string, t string) bool {
+	for _, s := range ss {
+		if strings.EqualFold(s, t) {
+			return true
+		}
+	}
+	return false
+}
+
+// Clear sets fields in the value pointed to by i to their zero value.
+// Clear descends i to depth clearing fields at each level. i must be a
+// pointer to a struct. Cycles in i are not detected.
+//
+// A depth of 2 will change i and i's children. A depth of 1 will change i
+// but no children of i. A depth of 0 will return with no changes to i.
+func Clear(i interface{}, fields []string, depth int) error {
+	const op = "db.Clear"
+	if len(fields) == 0 || depth == 0 {
+		return nil
+	}
+	fm := make(map[string]bool)
+	for _, f := range fields {
+		fm[f] = true
+	}
+
+	v := reflect.ValueOf(i)
+
+	switch v.Kind() {
+	case reflect.Ptr:
+		if v.IsNil() || v.Elem().Kind() != reflect.Struct {
+			return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+		}
+		clear(v, fm, depth)
+	default:
+		return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+	}
+	return nil
+}
+
+func clear(v reflect.Value, fields map[string]bool, depth int) {
+	if depth == 0 {
+		return
+	}
+	depth--
+
+	switch v.Kind() {
+	case reflect.Ptr:
+		clear(v.Elem(), fields, depth+1)
+	case reflect.Struct:
+		typeOfT := v.Type()
+		for i := 0; i < v.NumField(); i++ {
+			f := v.Field(i)
+			if ok := fields[typeOfT.Field(i).Name]; ok {
+				if f.IsValid() && f.CanSet() {
+					f.Set(reflect.Zero(f.Type()))
+				}
+				continue
+			}
+			clear(f, fields, depth)
+		}
+	}
+}
+
+func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Options) (string, []interface{}, error) {
+	const op = "db.whereClausesFromOpts"
+	var where []string
+	var args []interface{}
+	if opts.WithVersion != nil {
+		if *opts.WithVersion == 0 {
+			return "", nil, fmt.Errorf("%s: with version option is zero: %w", op, ErrInvalidParameter)
+		}
+		mDb := rw.underlying.Model(i)
+		err := mDb.Statement.Parse(i)
+		if err != nil && mDb.Statement.Schema == nil {
+			return "", nil, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
+		}
+		if !contains(mDb.Statement.Schema.DBNames, "version") {
+			return "", nil, fmt.Errorf("%s: %s does not have a version field: %w", op, mDb.Statement.Schema.Table, ErrInvalidParameter)
+		}
+		where = append(where, fmt.Sprintf("%s.version = ?", mDb.Statement.Schema.Table)) // we need to include the table name because of "on conflict" use cases
+		args = append(args, opts.WithVersion)
+	}
+	if opts.withWhereClause != "" {
+		where, args = append(where, opts.withWhereClause), append(args, opts.withWhereClauseArgs...)
+	}
+	return strings.Join(where, " and "), args, nil
+}
+
+func (_ *RW) LookupById(ctx context.Context, resource interface{}, opt ...Option) error {
+	panic("todo")
+}
+
+func (_ *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error {
+	panic("todo")
+}
+
+func (_ *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error {
+	panic("todo")
+}
+
+func (_ *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
+	panic("todo")
+}
+
+func (_ *RW) DoTx(ctx context.Context, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error) {
+	panic("todo")
+}
+
+func (_ *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
+	panic("todo")
+}
+
+func (_ *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error {
+	panic("todo")
+}
+
+func (_ *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
+	panic("todo")
+}
+
+func (_ *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
+	panic("todo")
 }
