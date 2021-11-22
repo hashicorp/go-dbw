@@ -1,4 +1,4 @@
-package db
+package dbw
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type Reader interface {
 	SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error
 
 	// Query will run the raw query and return the *sql.Rows results. Query will
-	// operate within the context of any ongoing transaction for the db.Reader.  The
+	// operate within the context of any ongoing transaction for the dbw.Reader.  The
 	// caller must close the returned *sql.Rows. Query can/should be used in
 	// combination with ScanRows.
 	Query(ctx context.Context, sql string, values []interface{}, opt ...Option) (*sql.Rows, error)

@@ -1,11 +1,11 @@
-# db package
+# dbw package
 
 ## Usage
 Just some high-level usage highlights to get you started.  Read the godocs for 
 a complete list of capabilities and their documentation.
 
 ```go
-    conn, _ := db.Open(dialect, &gorm.Config{})    
+    conn, _ := dbw.Open(dialect, &gorm.Config{})    
     rw := Db{Tx: conn}
     
     // There are writer methods like: Create, Update and Delete

@@ -1,4 +1,4 @@
-module github.com/hashicorp/go-db
+module github.com/hashicorp/go-dbw
 
 go 1.17
 

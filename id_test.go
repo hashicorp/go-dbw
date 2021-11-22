@@ -1,9 +1,10 @@
-package db
+package dbw_test
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-dbw"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +38,7 @@ func TestNewPublicId(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewPublicId(tt.args.prefix)
+			got, err := dbw.NewPublicId(tt.args.prefix)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewPublicId() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -82,7 +83,7 @@ func TestNewPrivateId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert, require := assert.New(t), require.New(t)
-			got, err := NewPrivateId(tt.args.prefix)
+			got, err := dbw.NewPrivateId(tt.args.prefix)
 			if tt.wantErr {
 				assert.Error(err)
 				return
@@ -134,7 +135,7 @@ func TestPseudoRandomId(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert, require := assert.New(t), require.New(t)
-			got, err := NewPublicId("id", WithPrngValues(tt.args.prngValues))
+			got, err := dbw.NewPublicId("id", dbw.WithPrngValues(tt.args.prngValues))
 			require.NoError(err)
 			if tt.sameAsPrev {
 				assert.Equal(prevTestValue, got)

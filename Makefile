@@ -39,4 +39,4 @@ protobuild:
 protolint:
 	@buf lint
 	# if/when this becomes a public repo, we can add this check
-	# @buf check breaking --against 'https://github.com/hashicorp/go-db.git#branch=main'
+	# @buf check breaking --against 'https://github.com/hashicorp/go-dbw.git#branch=main'

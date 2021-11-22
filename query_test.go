@@ -1,12 +1,12 @@
-package db_test
+package dbw_test
 
 import (
 	"context"
 	"database/sql"
 	"testing"
 
-	"github.com/hashicorp/go-db"
-	"github.com/hashicorp/go-db/internal/dbtest"
+	"github.com/hashicorp/go-dbw"
+	"github.com/hashicorp/go-dbw/internal/dbtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,11 +18,11 @@ func TestDb_Query(t *testing.T) {
 	)
 	testCtx := context.Background()
 	t.Parallel()
-	conn, _ := db.TestSetup(t)
+	conn, _ := dbw.TestSetup(t)
 	t.Run("valid", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
-		rw := db.New(conn)
-		publicId, err := db.NewPublicId("u")
+		rw := dbw.New(conn)
+		publicId, err := dbw.NewPublicId("u")
 		require.NoError(err)
 		rowsAffected, err := rw.Exec(testCtx, insert, []interface{}{
 			sql.Named("public_id", publicId),
