@@ -1,28 +1,42 @@
 # dbw package
 
+dbw is a database wrapper that supports connecting and using any database with a
+[GORM](https://github.com/go-gorm/gorm) driver.  It's intent is to completely
+encapsulate an application's access to it's database with the exception of
+migrations.    
+
+dbw is intentionally not an ORM and it removes typical ORM abstractions like
+"advanced query building", associations and migrations.  
+
+This is not to say you can't easily use dbw for complicated queries, it's just
+that dbw doesn't try to reinvent sql by providing some sort of pattern for
+building them with functions. Of course, dbw also provides lookup/search
+functions when you simply need to read resources from the database.
+
+dbw strives to make CRUD for database resources fairly trivial.  Even supporting
+"on conflict" for its create function.  dbw also allows you to opt out of its
+CRUD functions and use exec, query and scan rows directly.  You may want to
+carefully weigh when it's appropriate to use exec and query directly, since
+it's likely that each time you use them you're leaking a bit of your
+database schema into your application's domain. 
+
 ## Usage
 Just some high-level usage highlights to get you started.  Read the godocs for 
 a complete list of capabilities and their documentation.
 
 ```go
-    conn, _ := dbw.Open(dialect, &gorm.Config{})    
-    rw := Db{Tx: conn}
-    
-    // There are writer methods like: Create, Update and Delete
-    // that will write a struct with Gorm tags to the db.  The caller is 
-    // responsible for the transaction life cycle of the writer    
-    // and if an error is returned the caller must decide what to do with 
-    // the transaction, which is almost always a rollback for the caller.
-    err = rw.Create(context.Background(), user)
-   
-    // There are reader methods like: LookupByPublicId,  
-    // LookupByName, SearchWhere, LookupWhere, etc
-    // which will lookup resources for you and scan them into your struct
-    // with Gorm tags
-    err = rw.LookupByPublicId(context.Background(), foundUser)
+    // errors are intentionally ignored for brevity 
+    conn, _ := dbw.Open(dialect, url)    
+    rw := dbw.New(conn)
 
-    // There's reader ScanRows that facilitates scanning rows from 
-    // a query into your struct with Gorm tags
+    id, _ := dbw.NewPublicId("u")
+    user, _ := dbtest.NewTestUser()
+    _ = rw.Create(context.Background(), user)
+   
+   foundUser, _ := dbtest.NewTestUser()
+   foundUser.PublicId = id
+    _ = rw.LookupByPublicId(context.Background(), foundUser)
+
     where := `
     with avg_version as (
         select public_id, avg(version) as avg_version_for_user
@@ -33,29 +47,26 @@ a complete list of capabilities and their documentation.
     join avg_version av
       on u.public_id = av.public_id 
     where name in (@names)`
-    rows, err := rw.Query(context.Background(), where, []interface{}{ sql.Named{"names", "alice", "bob"}})
+    rows, err := rw.Query(
+        context.Background(), 
+        where, 
+        []interface{}{ sql.Named{"names", "alice", "bob"}},
+    )
 	defer rows.Close()
 	for rows.Next() {
         user := db_test.NewTestUser()
-        // scan the row into your Gorm struct
-		if err := rw.ScanRows(rows, &user); err != nil {
-            return err
-        }
+		_ = rw.ScanRows(rows, &user)
         // Do something with the user struct
     }
 
-    // DoTx is a writer function that wraps a TxHandler 
-    // in a retryable transaction.  You simply implement a
-    // TxHandler that does your writes and hand the handler
-    // to DoTx, which will wrap the writes in a retryable 
-    // transaction with the retry attempts and backoff
-    // strategy you specify via options.
+    retryErrFn := func(_ error) bool { return true }
     _, err = w.DoTx(
         context.Background(),
-        10,           // ten retries
-        ExpBackoff{}, // exponential backoff
+        func(_ error) bool { return true }, // retry all errors
+        3,                                  // three retries
+        ExpBackoff{},                       // exponential backoff
         func(w Writer) error {
-            // the TxHandler updates the user's friendly name
-            return w.Update(context.Background(), user, []string{"FriendlyName"})
+            // the TxHandler updates the user's name
+            return w.Update(context.Background(), user, []string{"Name"})
         })
 ```
