@@ -31,7 +31,7 @@ func TestDB_Debug(t *testing.T) {
 				os.Remove(tmpDbFile.Name())
 				os.Remove(tmpDbFile.Name() + "-journal")
 			})
-			db, err := Open(Sqlite, tmpDbFile.Name())
+			db, _ := TestSetup(t)
 			require.NoError(err)
 			db.Debug(tt.enable)
 			if tt.enable {
