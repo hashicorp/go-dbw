@@ -8,8 +8,9 @@ import (
 
 // Writer interface defines create, update and retryable transaction handlers
 type Writer interface {
+
 	// DoTx will wrap the TxHandler in a retryable transaction
-	DoTx(ctx context.Context, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error)
+	DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error)
 
 	// Update an object in the db, fieldMask is required and provides
 	// field_mask.proto paths for fields that should be updated. The i interface

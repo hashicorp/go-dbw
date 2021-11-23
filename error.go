@@ -7,4 +7,5 @@ var (
 	ErrInvalidParameter = errors.New("invalid parameter")
 	ErrInternal         = errors.New("internal error")
 	ErrRecordNotFound   = errors.New("record not found")
+	ErrMaxRetries       = errors.New("too many retries")
 )
