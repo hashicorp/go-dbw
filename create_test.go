@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
-	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -20,7 +19,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
-		id, err := uuid.GenerateUUID()
+		id, err := dbw.NewPublicId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -46,7 +45,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("WithBeforeCreate", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
-		id, err := uuid.GenerateUUID()
+		id, err := dbw.NewPublicId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -90,7 +89,7 @@ func TestDb_Create(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
 		db.Debug(true)
-		id, err := uuid.GenerateUUID()
+		id, err := dbw.NewPublicId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -143,7 +142,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("nil-tx", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(nil)
-		id, err := uuid.GenerateUUID()
+		id, err := dbw.NewPublicId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)

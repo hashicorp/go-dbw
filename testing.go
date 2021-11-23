@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-secure-stdlib/base62"
 	"github.com/xo/dburl"
 
-	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm/logger"
@@ -158,7 +158,7 @@ func WithTestDatabaseUrl(url string) TestOption {
 func TestId(t *testing.T) string {
 	t.Helper()
 	require := require.New(t)
-	id, err := uuid.GenerateUUID()
+	id, err := base62.Random(20)
 	require.NoError(err)
 	return id
 }
