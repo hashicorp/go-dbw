@@ -11,7 +11,7 @@ import (
 // LookupByPublicId will lookup resource by its public_id or private_id, which
 // must be unique. Options are ignored.
 func (rw *RW) LookupById(ctx context.Context, resourceWithIder interface{}, _ ...Option) error {
-	const op = "db.LookupById"
+	const op = "dbw.LookupById"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
@@ -38,7 +38,7 @@ func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder,
 }
 
 func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {
-	const op = "db.lookupAfterWrite"
+	const op = "dbw.lookupAfterWrite"
 	opts := getOpts(opt...)
 	withLookup := opts.withLookup
 

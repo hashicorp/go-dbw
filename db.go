@@ -65,7 +65,7 @@ func (db *DB) Debug(on bool) {
 // embedded for various reasons, already exports a DB() func and it's base type
 // is also an export DB type
 func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
-	const op = "db.(DB).SqlDB"
+	const op = "dbw.(DB).SqlDB"
 	if d.DB == nil {
 		return nil, fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
@@ -74,7 +74,7 @@ func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
 
 // Close the underlying sql.DB
 func (d *DB) Close(ctx context.Context) error {
-	const op = "db.(DB).Close"
+	const op = "dbw.(DB).Close"
 	if d.DB == nil {
 		return fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
@@ -92,7 +92,7 @@ func (d *DB) Close(ctx context.Context) error {
 // answer is no, but there are occasions when it's necessary.  See the sql.DB
 // docs for more information.
 func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
-	const op = "db.Open"
+	const op = "dbw.Open"
 	if connectionUrl == "" {
 		return nil, fmt.Errorf("%s: missing connection url: %w", op, ErrInvalidParameter)
 	}

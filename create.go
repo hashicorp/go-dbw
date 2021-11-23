@@ -38,7 +38,7 @@ type VetForWriter interface {
 // allows specifying an additional constraint on the on conflict operation in
 // addition to the on conflict target policy (columns or constraint).
 func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
-	const op = "db.Create"
+	const op = "dbw.Create"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}

@@ -149,6 +149,6 @@ func TestDb_Create(t *testing.T) {
 		user.Name = "foo-" + id
 		err = w.Create(context.Background(), user)
 		require.Error(err)
-		assert.Contains(err.Error(), "db.Create: missing underlying db: invalid parameter")
+		assert.Contains(err.Error(), "dbw.Create: missing underlying db: invalid parameter")
 	})
 }

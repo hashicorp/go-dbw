@@ -19,7 +19,7 @@ func NewPublicId(prefix string, opt ...Option) (string, error) {
 }
 
 func newId(prefix string, opt ...Option) (string, error) {
-	const op = "db.newId"
+	const op = "dbw.newId"
 	if prefix == "" {
 		return "", fmt.Errorf("%s: missing prefix: %w", op, ErrInvalidParameter)
 	}

@@ -33,7 +33,7 @@ func New(underlying *DB) *RW {
 // is the number of rows affected by the sql. No options are currently
 // supported.
 func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...Option) (int, error) {
-	const op = "db.Exec"
+	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
 	}
@@ -79,7 +79,7 @@ func contains(ss []string, t string) bool {
 // A depth of 2 will change i and i's children. A depth of 1 will change i
 // but no children of i. A depth of 0 will return with no changes to i.
 func Clear(i interface{}, fields []string, depth int) error {
-	const op = "db.Clear"
+	const op = "dbw.Clear"
 	if len(fields) == 0 || depth == 0 {
 		return nil
 	}
@@ -127,7 +127,7 @@ func clear(v reflect.Value, fields map[string]bool, depth int) {
 }
 
 func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Options) (string, []interface{}, error) {
-	const op = "db.whereClausesFromOpts"
+	const op = "dbw.whereClausesFromOpts"
 	var where []string
 	var args []interface{}
 	if opts.WithVersion != nil {
@@ -152,7 +152,7 @@ func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Opti
 }
 
 func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
-	const op = "db.primaryKeysWhere"
+	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
 	var fieldValues []interface{}
 	tx := rw.underlying.Model(i)
@@ -200,10 +200,6 @@ func (_ *RW) LookupWhere(ctx context.Context, resource interface{}, where string
 }
 
 func (_ *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
-	panic("todo")
-}
-
-func (_ *RW) DoTx(ctx context.Context, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error) {
 	panic("todo")
 }
 
