@@ -48,6 +48,11 @@ type DB struct {
 	*gorm.DB
 }
 
+// DbType will return the DbType of the connection
+func (db *DB) DbType() (DbType, error) {
+	return StringToDbType(db.Dialector.Name())
+}
+
 // Debug will enable/disable debug info for the connection
 func (db *DB) Debug(on bool) {
 	if on {

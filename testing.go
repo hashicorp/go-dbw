@@ -205,13 +205,13 @@ const (
 begin;
 
 create table if not exists db_test_user (
-  public_id text primary key,
+  public_id text constraint db_test_user_pkey primary key,
   create_time wt_timestamp,
   update_time wt_timestamp,
   name text unique,
   phone_number text,
   email text,
-  version wt_version
+  version wt_version default 1
 );
 
 create trigger update_time_column 
@@ -389,7 +389,7 @@ is
 -- ########################################################################################
 
 create table if not exists db_test_user (
-	public_id text primary key,
+	public_id text constraint db_test_user_pkey primary key,
 	create_time wt_timestamp,
 	update_time wt_timestamp,
 	name text unique,

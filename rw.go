@@ -207,10 +207,6 @@ func (_ *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string,
 	panic("todo")
 }
 
-func (_ *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error {
-	panic("todo")
-}
-
 func (_ *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
 	panic("todo")
 }

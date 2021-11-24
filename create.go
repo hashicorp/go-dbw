@@ -27,7 +27,8 @@ type VetForWriter interface {
 }
 
 // Create an object in the db with options: WithDebug, WithLookup,
-// WithReturnRowsAffected, OnConflict, WithVersion, and WithWhere.
+// WithReturnRowsAffected, OnConflict, WithBeforeWrite, WithAfterWrite,
+// WithVersion, and WithWhere.
 //
 // OnConflict specifies alternative actions to take when an insert results in a
 // unique constraint or exclusion constraint error. If WithVersion is used, then
@@ -140,6 +141,56 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	}
 	if err := rw.lookupAfterWrite(ctx, i, opt...); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+// CreateItems will create multiple items of the same type. Supported options:
+// WithDebug, WithBeforeWrite, WithAfterWrite, WithReturnRowsAffected,
+// OnConflict, WithVersion, and WithWhere. WithLookup is not a supported option.
+func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error {
+	const op = "db.CreateItems"
+	if rw.underlying == nil {
+		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+	}
+	if len(createItems) == 0 {
+		return fmt.Errorf("%s: missing interfaces: %w", op, ErrInvalidParameter)
+	}
+	opts := getOpts(opt...)
+	if opts.withLookup {
+		return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
+	}
+	// verify that createItems are all the same type.
+	var foundType reflect.Type
+	for i, v := range createItems {
+		if i == 0 {
+			foundType = reflect.TypeOf(v)
+		}
+		currentType := reflect.TypeOf(v)
+		if foundType != currentType {
+			return fmt.Errorf("%s: create items contains disparate types. item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
+		}
+	}
+	if opts.withBeforeWrite != nil {
+		if err := opts.withBeforeWrite(createItems); err != nil {
+			return fmt.Errorf("%s: error before write: %w", op, err)
+		}
+	}
+	for _, item := range createItems {
+		if err := rw.Create(ctx, item,
+			WithOnConflict(opts.withOnConflict),
+			WithReturnRowsAffected(opts.withRowsAffected),
+			WithDebug(opts.withDebug),
+			WithVersion(opts.WithVersion),
+			WithWhere(opts.withWhereClause, opts.withWhereClauseArgs...),
+		); err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+	}
+	if opts.withAfterWrite != nil {
+		if err := opts.withAfterWrite(createItems); err != nil {
+			return fmt.Errorf("%s: error after write: %w", op, err)
+		}
 	}
 	return nil
 }
