@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/go-dbw/internal/dbtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -409,6 +410,120 @@ func TestDb_Create_OnConflict(t *testing.T) {
 		assert.Equal(conflictUser.PublicId, foundUser.PublicId)
 		assert.Equal(conflictUser.Name, foundUser.Name)
 	})
+}
+
+func TestDb_CreateItems(t *testing.T) {
+	testCtx := context.Background()
+	conn, _ := dbw.TestSetup(t)
+	testRw := dbw.New(conn)
+
+	createFn := func() []interface{} {
+		results := []interface{}{}
+		for i := 0; i < 10; i++ {
+			u, err := dbtest.NewTestUser()
+			require.NoError(t, err)
+			results = append(results, u)
+		}
+		return results
+	}
+	createMixedFn := func() []interface{} {
+		u, err := dbtest.NewTestUser()
+		require.NoError(t, err)
+		c, err := dbtest.NewTestCar()
+		require.NoError(t, err)
+		return []interface{}{
+			u,
+			c,
+		}
+	}
+
+	type args struct {
+		createItems []interface{}
+		opt         []dbw.Option
+	}
+	tests := []struct {
+		name      string
+		rw        *dbw.RW
+		args      args
+		wantErr   bool
+		wantErrIs error
+	}{
+		{
+			name: "simple",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+			},
+			wantErr: false,
+		},
+		{
+			name: "mixed items",
+			rw:   testRw,
+			args: args{
+				createItems: createMixedFn(),
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
+		{
+			name: "bad opt: WithLookup",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+				opt:         []dbw.Option{dbw.WithLookup(true)},
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
+		{
+			name: "nil underlying",
+			rw:   &dbw.RW{},
+			args: args{
+				createItems: createFn(),
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
+		{
+			name: "empty items",
+			rw:   testRw,
+			args: args{
+				createItems: []interface{}{},
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
+		{
+			name: "nil items",
+			rw:   testRw,
+			args: args{
+				createItems: nil,
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert, require := assert.New(t), require.New(t)
+			err := tt.rw.CreateItems(testCtx, tt.args.createItems, tt.args.opt...)
+			if tt.wantErr {
+				require.Error(err)
+				assert.ErrorIsf(err, tt.wantErrIs, "unexpected error: %s", err.Error())
+				return
+			}
+			require.NoError(err)
+			for _, item := range tt.args.createItems {
+				u := dbtest.AllocTestUser()
+				u.PublicId = item.(*dbtest.TestUser).PublicId
+				err := tt.rw.LookupByPublicId(context.Background(), &u)
+				assert.NoError(err)
+				if _, ok := item.(*dbtest.TestUser); ok {
+					assert.Truef(proto.Equal(item.(*dbtest.TestUser).StoreTestUser, u.StoreTestUser), "%s and %s should be equal", item, u)
+				}
+			}
+		})
+	}
 }
 
 type dbTestUpdateAll struct {
