@@ -18,7 +18,7 @@ message Timestamp {
   google.protobuf.Timestamp timestamp = 1;
 }
 
-// TestUser for gorm test user model
+// TestUser model
 message StoreTestUser {
   // public_id is the used to access the user via an API
   // @inject_tag: gorm:"primary_key"
@@ -45,4 +45,29 @@ message StoreTestUser {
 
   // @inject_tag: `gorm:"default:null"`
   uint32 version = 8;
+}
+
+// TestCar car model
+message StoreTestCar {
+  // public_id is the used to access the car via an API
+  string public_id = 4;
+
+  // create_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp create_time = 2;
+
+  // update_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp update_time = 3;
+
+  // name is the optional friendly name used to
+  // access the Scope via an API
+  // @inject_tag: `gorm:"default:null"`
+  string name = 5;
+
+  // @inject_tag: `gorm:"default:null"`
+  string model = 6;
+
+  // @inject_tag: `gorm:"default:null"`
+  int32 mpg = 7;
 }

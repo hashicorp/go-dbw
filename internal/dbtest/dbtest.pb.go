@@ -77,7 +77,7 @@ func (x *Timestamp) GetTimestamp() *timestamppb.Timestamp {
 	return nil
 }
 
-// TestUser for gorm test user model
+// TestUser model
 type StoreTestUser struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -185,6 +185,104 @@ func (x *StoreTestUser) GetVersion() uint32 {
 	return 0
 }
 
+// TestCar car model
+type StoreTestCar struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// public_id is the used to access the car via an API
+	PublicId string `protobuf:"bytes,4,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	// create_time from the RDBMS
+	// @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+	CreateTime *Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty" gorm:"default:CURRENT_TIMESTAMP"`
+	// update_time from the RDBMS
+	// @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+	UpdateTime *Timestamp `protobuf:"bytes,3,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty" gorm:"default:CURRENT_TIMESTAMP"`
+	// name is the optional friendly name used to
+	// access the Scope via an API
+	// @inject_tag: `gorm:"default:null"`
+	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty" gorm:"default:null"`
+	// @inject_tag: `gorm:"default:null"`
+	Model string `protobuf:"bytes,6,opt,name=model,proto3" json:"model,omitempty" gorm:"default:null"`
+	// @inject_tag: `gorm:"default:null"`
+	Mpg int32 `protobuf:"varint,7,opt,name=mpg,proto3" json:"mpg,omitempty" gorm:"default:null"`
+}
+
+func (x *StoreTestCar) Reset() {
+	*x = StoreTestCar{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_dbtest_storage_v1_dbtest_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StoreTestCar) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StoreTestCar) ProtoMessage() {}
+
+func (x *StoreTestCar) ProtoReflect() protoreflect.Message {
+	mi := &file_dbtest_storage_v1_dbtest_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StoreTestCar.ProtoReflect.Descriptor instead.
+func (*StoreTestCar) Descriptor() ([]byte, []int) {
+	return file_dbtest_storage_v1_dbtest_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StoreTestCar) GetPublicId() string {
+	if x != nil {
+		return x.PublicId
+	}
+	return ""
+}
+
+func (x *StoreTestCar) GetCreateTime() *Timestamp {
+	if x != nil {
+		return x.CreateTime
+	}
+	return nil
+}
+
+func (x *StoreTestCar) GetUpdateTime() *Timestamp {
+	if x != nil {
+		return x.UpdateTime
+	}
+	return nil
+}
+
+func (x *StoreTestCar) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StoreTestCar) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *StoreTestCar) GetMpg() int32 {
+	if x != nil {
+		return x.Mpg
+	}
+	return 0
+}
+
 var File_dbtest_storage_v1_dbtest_proto protoreflect.FileDescriptor
 
 var file_dbtest_storage_v1_dbtest_proto_rawDesc = []byte{
@@ -214,11 +312,26 @@ var file_dbtest_storage_v1_dbtest_proto_rawDesc = []byte{
 	0x28, 0x09, 0x52, 0x0b, 0x70, 0x68, 0x6f, 0x6e, 0x65, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12,
 	0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
 	0x65, 0x6d, 0x61, 0x69, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e,
-	0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x42,
-	0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x61,
-	0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2f, 0x64, 0x62, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72,
-	0x6e, 0x61, 0x6c, 0x2f, 0x64, 0x62, 0x74, 0x65, 0x73, 0x74, 0x3b, 0x64, 0x62, 0x74, 0x65, 0x73,
-	0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x22,
+	0xe5, 0x01, 0x0a, 0x0c, 0x53, 0x74, 0x6f, 0x72, 0x65, 0x54, 0x65, 0x73, 0x74, 0x43, 0x61, 0x72,
+	0x12, 0x1b, 0x0a, 0x09, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x63, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x75, 0x62, 0x6c, 0x69, 0x63, 0x49, 0x64, 0x12, 0x3d, 0x0a,
+	0x0b, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x64, 0x62, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x73, 0x74, 0x6f, 0x72,
+	0x61, 0x67, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
+	0x52, 0x0a, 0x63, 0x72, 0x65, 0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x3d, 0x0a, 0x0b,
+	0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x1c, 0x2e, 0x64, 0x62, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x61,
+	0x67, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52,
+	0x0a, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12,
+	0x14, 0x0a, 0x05, 0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
+	0x6d, 0x6f, 0x64, 0x65, 0x6c, 0x12, 0x10, 0x0a, 0x03, 0x6d, 0x70, 0x67, 0x18, 0x07, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x03, 0x6d, 0x70, 0x67, 0x42, 0x30, 0x5a, 0x2e, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x61, 0x73, 0x68, 0x69, 0x63, 0x6f, 0x72, 0x70, 0x2f,
+	0x64, 0x62, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x64, 0x62, 0x74, 0x65,
+	0x73, 0x74, 0x3b, 0x64, 0x62, 0x74, 0x65, 0x73, 0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -233,21 +346,24 @@ func file_dbtest_storage_v1_dbtest_proto_rawDescGZIP() []byte {
 	return file_dbtest_storage_v1_dbtest_proto_rawDescData
 }
 
-var file_dbtest_storage_v1_dbtest_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_dbtest_storage_v1_dbtest_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_dbtest_storage_v1_dbtest_proto_goTypes = []interface{}{
 	(*Timestamp)(nil),             // 0: dbtest.storage.v1.Timestamp
 	(*StoreTestUser)(nil),         // 1: dbtest.storage.v1.StoreTestUser
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*StoreTestCar)(nil),          // 2: dbtest.storage.v1.StoreTestCar
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_dbtest_storage_v1_dbtest_proto_depIdxs = []int32{
-	2, // 0: dbtest.storage.v1.Timestamp.timestamp:type_name -> google.protobuf.Timestamp
+	3, // 0: dbtest.storage.v1.Timestamp.timestamp:type_name -> google.protobuf.Timestamp
 	0, // 1: dbtest.storage.v1.StoreTestUser.create_time:type_name -> dbtest.storage.v1.Timestamp
 	0, // 2: dbtest.storage.v1.StoreTestUser.update_time:type_name -> dbtest.storage.v1.Timestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 3: dbtest.storage.v1.StoreTestCar.create_time:type_name -> dbtest.storage.v1.Timestamp
+	0, // 4: dbtest.storage.v1.StoreTestCar.update_time:type_name -> dbtest.storage.v1.Timestamp
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_dbtest_storage_v1_dbtest_proto_init() }
@@ -280,6 +396,18 @@ func file_dbtest_storage_v1_dbtest_proto_init() {
 				return nil
 			}
 		}
+		file_dbtest_storage_v1_dbtest_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StoreTestCar); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -287,7 +415,7 @@ func file_dbtest_storage_v1_dbtest_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_dbtest_storage_v1_dbtest_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

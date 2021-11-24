@@ -8,6 +8,7 @@ import (
 
 const (
 	defaultUserTablename = "db_test_user"
+	defaultCarTableName  = "db_test_car"
 )
 
 type TestUser struct {
@@ -55,6 +56,35 @@ func (u *TestUser) SetTableName(name string) {
 	default:
 		u.table = name
 	}
+}
+
+type TestCar struct {
+	*StoreTestCar
+	table string `gorm:"-"`
+}
+
+func NewTestCar() (*TestCar, error) {
+	publicId, err := base62.Random(20)
+	if err != nil {
+		return nil, err
+	}
+	return &TestCar{
+		StoreTestCar: &StoreTestCar{
+			PublicId: publicId,
+		},
+	}, nil
+}
+
+func (c *TestCar) TableName() string {
+	if c.table != "" {
+		return c.table
+	}
+
+	return defaultCarTableName
+}
+
+func (c *TestCar) SetTableName(name string) {
+	c.table = name
 }
 
 type Cloner interface {

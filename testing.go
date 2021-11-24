@@ -206,15 +206,15 @@ begin;
 
 create table if not exists db_test_user (
   public_id text constraint db_test_user_pkey primary key,
-  create_time wt_timestamp,
-  update_time wt_timestamp,
+  create_time timestamp not null default current_timestamp,
+  update_time timestamp not null default current_timestamp,
   name text unique,
   phone_number text,
   email text,
-  version wt_version default 1
+  version int default 1
 );
 
-create trigger update_time_column 
+create trigger update_time_column_db_test_user
 before update on db_test_user 
 for each row 
 when 
@@ -227,7 +227,7 @@ when
     update db_test_user set update_time = datetime('now','localtime') where rowid == new.rowid;
   end;
 
-create trigger immutable_columns 
+create trigger immutable_columns_db_test_user
 before update on db_test_user 
 for each row 
   when 
@@ -236,14 +236,14 @@ for each row
 	  select raise(abort, 'immutable column');
 	end;
 
-create trigger default_create_time_column
+create trigger default_create_time_column_db_test_user
 before insert on db_test_user
 for each row
   begin
 	update db_test_user set create_time = datetime('now','localtime') where rowid = new.rowid;
   end;
 	
-create trigger update_version_column
+create trigger update_version_column_db_test_user
 after update on db_test_user
 for each row
 when 
@@ -255,6 +255,48 @@ when
     update db_test_user set version = old.version + 1 where rowid = new.rowid;
   end;
   
+create table if not exists db_test_car (
+	public_id text constraint db_test_car_pkey primary key,
+	create_time timestamp not null default current_timestamp,
+	update_time timestamp not null default current_timestamp,
+	name text unique,
+	model text,
+	mpg smallint,
+	version int default 1
+);
+  
+create trigger update_time_column_db_test_car
+before update on db_test_car
+for each row 
+when 
+  new.public_id 	<> old.public_id or
+  new.name      	<> old.name or
+  new.model 		<> old.model or
+  new.mpg     		<> old.mpg or
+  new.version   	<> old.version 
+  begin
+    update db_test_car set update_time = datetime('now','localtime') where rowid == new.rowid;
+  end;
+
+  create trigger default_create_time_column_db_test_car
+  before insert on db_test_car
+  for each row
+	begin
+	  update db_test_car set create_time = datetime('now','localtime') where rowid = new.rowid;
+	end;
+  
+create trigger update_version_column_db_test_car
+after update on db_test_car
+for each row
+when 
+	new.public_id 	<> old.public_id or
+	new.name      	<> old.name or
+	new.model  		<> old.model or
+	new.mpg     	<> old.mpg
+	begin
+	update db_test_car set version = old.version + 1 where rowid = new.rowid;
+	end;
+
   commit;
 	`
 
@@ -398,43 +440,66 @@ create table if not exists db_test_user (
 	version wt_version
 );
 	
-create trigger 
-	update_time_column 
+create trigger update_time_column 
 before 
 update on db_test_user 
 	for each row execute procedure update_time_column();
 
 -- define the immutable fields for db_test_user
-create trigger 
-	immutable_columns
+create trigger immutable_columns
 before
 update on db_test_user
 	for each row execute procedure immutable_columns('create_time');
 
-create trigger 
-	default_create_time_column
+create trigger default_create_time_column
 before
 insert on db_test_user 
 	for each row execute procedure default_create_time();
 
-create trigger 
-	update_version_column
+create trigger update_version_column
 after update on db_test_user
 	for each row execute procedure update_version_column();
 
+create table if not exists db_test_car (
+	id bigint generated always as identity primary key,
+	create_time wt_timestamp,
+	update_time wt_timestamp,
+	public_id text not null unique,
+	name text unique,
+	model text,
+	mpg smallint
+);
+	
+create trigger update_time_column 
+before 
+update on db_test_car 
+	for each row execute procedure update_time_column();
 
+-- define the immutable fields for db_test_car
+create trigger immutable_columns
+before
+update on db_test_car
+	for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before
+insert on db_test_car
+	for each row execute procedure default_create_time();
+	
 commit;
 	`
 
 	testQueryDropTablesSqlite = `
 begin;
 drop table if exists db_test_user;
+drop table if exists db_test_car;
 commit;
 `
 
 	testQueryDropTablesPostgres = `
 begin;
 drop table if exists db_test_user cascade;
+drop table if exists db_test_car cascade;
 drop domain if exists wt_public_id;
 drop domain if exists wt_timestamp;
 drop domain if exists wt_version;
