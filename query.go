@@ -18,11 +18,11 @@ func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, _ ...
 	if sql == "" {
 		return nil, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	gormDb := rw.underlying.Raw(sql, values...)
-	if gormDb.Error != nil {
-		return nil, fmt.Errorf("%s: %w", op, gormDb.Error)
+	db := rw.underlying.Raw(sql, values...)
+	if db.Error != nil {
+		return nil, fmt.Errorf("%s: %w", op, db.Error)
 	}
-	return gormDb.Rows()
+	return db.Rows()
 }
 
 // Scan rows will scan the rows into the interface

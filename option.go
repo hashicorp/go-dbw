@@ -45,7 +45,7 @@ type Options struct {
 	withMaxOpenConnections int
 	withMinOpenConnections int
 
-	// withDebug indicates that the given operation should invoke Gorm's debug
+	// withDebug indicates that the given operation should invoke debug output
 	// mode
 	withDebug bool
 
@@ -171,7 +171,8 @@ func WithMinOpenConnections(max int) Option {
 	}
 }
 
-// WithDebug specifies the given operation should invoke debug mode in Gorm
+// WithDebug specifies the given operation should invoke debug mode for the
+// database output
 func WithDebug(with bool) Option {
 	return func(o *Options) {
 		o.withDebug = with

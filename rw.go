@@ -40,11 +40,11 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 	if sql == "" {
 		return NoRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	gormDb := rw.underlying.Exec(sql, values...)
-	if gormDb.Error != nil {
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, gormDb.Error)
+	db := rw.underlying.Exec(sql, values...)
+	if db.Error != nil {
+		return NoRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
-	return int(gormDb.RowsAffected), nil
+	return int(db.RowsAffected), nil
 }
 
 func setFieldsToNil(i interface{}, fieldNames []string) {

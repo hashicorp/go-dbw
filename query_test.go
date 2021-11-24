@@ -36,7 +36,7 @@ func TestDb_Query(t *testing.T) {
 		for rows.Next() {
 			u, err := dbtest.NewTestUser()
 			require.NoError(err)
-			// scan the row into your Gorm struct
+			// scan the row into your struct
 			err = rw.ScanRows(rows, &u)
 			require.NoError(err)
 			assert.Equal(publicId, u.PublicId)
