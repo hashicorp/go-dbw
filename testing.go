@@ -3,7 +3,6 @@ package dbw
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -47,14 +46,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		t.Fatal("missing postgres test db url")
 
 	case opts.withDialect == Sqlite.String() && opts.withTestDatabaseUrl == "":
-		tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
-		require.NoError(err)
-		t.Cleanup(func() {
-			os.Remove(tmpDbFile.Name())
-			os.Remove(tmpDbFile.Name() + "-journal")
-		})
-		url = tmpDbFile.Name()
-
+		url = "file::memory:" // just using a temp in-memory sqlite database
 	default:
 		url = opts.withTestDatabaseUrl
 	}

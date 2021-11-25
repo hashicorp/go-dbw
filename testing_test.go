@@ -2,8 +2,6 @@ package dbw
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,14 +27,8 @@ func Test_getTestOpts(t *testing.T) {
 }
 
 func Test_TestSetup(t *testing.T) {
-	tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.Remove(tmpDbFile.Name())
-		os.Remove(tmpDbFile.Name() + "-journal")
-	})
 	testMigrationFn := func(context.Context, string, string) error {
-		conn, err := Open(Sqlite, tmpDbFile.Name())
+		conn, err := Open(Sqlite, "file::memory:")
 		require.NoError(t, err)
 		rw := New(conn)
 		_, err = rw.Exec(context.Background(), testQueryCreateTablesSqlite, nil)

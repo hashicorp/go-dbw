@@ -3,14 +3,11 @@ package dbw
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgconn"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"gorm.io/gorm/logger"
 )
 
@@ -24,15 +21,8 @@ func TestDB_Debug(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert, require := assert.New(t), require.New(t)
-			tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
-			require.NoError(err)
-			t.Cleanup(func() {
-				os.Remove(tmpDbFile.Name())
-				os.Remove(tmpDbFile.Name() + "-journal")
-			})
+			assert := assert.New(t)
 			db, _ := TestSetup(t)
-			require.NoError(err)
 			db.Debug(tt.enable)
 			if tt.enable {
 				assert.Equal(db.wrapped.Logger, logger.Default.LogMode(logger.Info))

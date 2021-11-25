@@ -2,7 +2,6 @@ package dbw_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -129,13 +128,7 @@ func TestDB_SqlDB(t *testing.T) {
 	testCtx := context.Background()
 	t.Run("valid", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
-		tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
-		require.NoError(err)
-		t.Cleanup(func() {
-			os.Remove(tmpDbFile.Name())
-			os.Remove(tmpDbFile.Name() + "-journal")
-		})
-		db, err := dbw.Open(dbw.Sqlite, tmpDbFile.Name())
+		db, err := dbw.Open(dbw.Sqlite, "file::memory:")
 		require.NoError(err)
 		got, err := db.SqlDB(testCtx)
 		require.NoError(err)
@@ -155,13 +148,7 @@ func TestDB_Close(t *testing.T) {
 	testCtx := context.Background()
 	t.Run("valid", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
-		tmpDbFile, err := ioutil.TempFile("./", "tmp-db")
-		require.NoError(err)
-		t.Cleanup(func() {
-			os.Remove(tmpDbFile.Name())
-			os.Remove(tmpDbFile.Name() + "-journal")
-		})
-		db, err := dbw.Open(dbw.Sqlite, tmpDbFile.Name())
+		db, err := dbw.Open(dbw.Sqlite, "file::memory:")
 		require.NoError(err)
 		got, err := db.SqlDB(testCtx)
 		require.NoError(err)
