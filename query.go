@@ -18,7 +18,7 @@ func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, _ ...
 	if sql == "" {
 		return nil, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	db := rw.underlying.Raw(sql, values...)
+	db := rw.underlying.wrapped.Raw(sql, values...)
 	if db.Error != nil {
 		return nil, fmt.Errorf("%s: %w", op, db.Error)
 	}
@@ -34,5 +34,5 @@ func (rw *RW) ScanRows(rows *sql.Rows, result interface{}) error {
 	if isNil(result) {
 		return fmt.Errorf("%s: missing result: %w", op, ErrInvalidParameter)
 	}
-	return rw.underlying.ScanRows(rows, result)
+	return rw.underlying.wrapped.ScanRows(rows, result)
 }

@@ -45,22 +45,22 @@ func StringToDbType(dialect string) (DbType, error) {
 
 // DB is a wrapper around the ORM
 type DB struct {
-	*gorm.DB
+	wrapped *gorm.DB
 }
 
 // DbType will return the DbType of the connection
 func (db *DB) DbType() (DbType, error) {
-	return StringToDbType(db.Dialector.Name())
+	return StringToDbType(db.wrapped.Dialector.Name())
 }
 
 // Debug will enable/disable debug info for the connection
 func (db *DB) Debug(on bool) {
 	if on {
 		// info level in the Gorm domain which maps to a debug level in the boundary domain
-		db.Logger = logger.Default.LogMode(logger.Info)
+		db.wrapped.Logger = logger.Default.LogMode(logger.Info)
 	} else {
 		// the default level in the gorm domain is: error level
-		db.Logger = logger.Default.LogMode(logger.Error)
+		db.wrapped.Logger = logger.Default.LogMode(logger.Error)
 	}
 }
 
@@ -71,19 +71,19 @@ func (db *DB) Debug(on bool) {
 // is also an export DB type
 func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
 	const op = "dbw.(DB).SqlDB"
-	if d.DB == nil {
+	if d.wrapped == nil {
 		return nil, fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
-	return d.DB.DB()
+	return d.wrapped.DB()
 }
 
 // Close the underlying sql.DB
 func (d *DB) Close(ctx context.Context) error {
 	const op = "dbw.(DB).Close"
-	if d.DB == nil {
+	if d.wrapped == nil {
 		return fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
-	underlying, err := d.DB.DB()
+	underlying, err := d.wrapped.DB()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -139,7 +139,7 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 		}
 		underlyingDB.SetMaxOpenConns(opts.withMaxOpenConnections)
 	}
-	return &DB{db}, nil
+	return &DB{wrapped: db}, nil
 }
 
 type gormLogger struct {

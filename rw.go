@@ -40,7 +40,7 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 	if sql == "" {
 		return NoRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	db := rw.underlying.Exec(sql, values...)
+	db := rw.underlying.wrapped.Exec(sql, values...)
 	if db.Error != nil {
 		return NoRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
@@ -134,7 +134,7 @@ func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Opti
 		if *opts.WithVersion == 0 {
 			return "", nil, fmt.Errorf("%s: with version option is zero: %w", op, ErrInvalidParameter)
 		}
-		mDb := rw.underlying.Model(i)
+		mDb := rw.underlying.wrapped.Model(i)
 		err := mDb.Statement.Parse(i)
 		if err != nil && mDb.Statement.Schema == nil {
 			return "", nil, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
@@ -155,7 +155,7 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
 	var fieldValues []interface{}
-	tx := rw.underlying.Model(i)
+	tx := rw.underlying.wrapped.Model(i)
 	if err := tx.Statement.Parse(i); err != nil {
 		return "", nil, fmt.Errorf("%s: %w", op, err)
 	}

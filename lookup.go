@@ -22,7 +22,7 @@ func (rw *RW) LookupById(ctx context.Context, resourceWithIder interface{}, _ ..
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := rw.underlying.Where(where, keys...).First(resourceWithIder).Error; err != nil {
+	if err := rw.underlying.wrapped.Where(where, keys...).First(resourceWithIder).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
 		}

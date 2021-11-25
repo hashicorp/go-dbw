@@ -31,7 +31,7 @@ func (w *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, r
 		}
 
 		// step one of this, start a transaction...
-		newTx := w.underlying.WithContext(ctx)
+		newTx := w.underlying.wrapped.WithContext(ctx)
 		newTx = newTx.Begin()
 
 		rw := &RW{underlying: &DB{newTx}}

@@ -60,7 +60,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 		}
 	}
 
-	db := rw.underlying.WithContext(ctx)
+	db := rw.underlying.wrapped.WithContext(ctx)
 	var onConflictDoNothing bool
 	if opts.withOnConflict != nil {
 		c := clause.OnConflict{}

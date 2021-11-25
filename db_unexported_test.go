@@ -35,9 +35,9 @@ func TestDB_Debug(t *testing.T) {
 			require.NoError(err)
 			db.Debug(tt.enable)
 			if tt.enable {
-				assert.Equal(db.Logger, logger.Default.LogMode(logger.Info))
+				assert.Equal(db.wrapped.Logger, logger.Default.LogMode(logger.Info))
 			} else {
-				assert.Equal(db.Logger, logger.Default.LogMode(logger.Error))
+				assert.Equal(db.wrapped.Logger, logger.Default.LogMode(logger.Error))
 			}
 		})
 	}

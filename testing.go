@@ -92,7 +92,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	db, err := Open(dbType, url)
 	require.NoError(err)
 
-	db.Logger.LogMode(logger.Error)
+	db.wrapped.Logger.LogMode(logger.Error)
 	t.Cleanup(func() {
 		assert.NoError(t, db.Close(ctx), "Got error closing db.")
 	})
@@ -170,13 +170,13 @@ func TestCreateTables(t *testing.T, conn *DB) {
 	testCtx := context.Background()
 	rw := New(conn)
 	var query string
-	switch conn.Dialector.Name() {
+	switch conn.wrapped.Dialector.Name() {
 	case "sqlite":
 		query = testQueryCreateTablesSqlite
 	case "postgres":
 		query = testQueryCreateTablesPostgres
 	default:
-		t.Fatalf("unknown dialect: %s", conn.Dialector.Name())
+		t.Fatalf("unknown dialect: %s", conn.wrapped.Dialector.Name())
 	}
 	_, err := rw.Exec(testCtx, query, nil)
 	require.NoError(err)
@@ -188,13 +188,13 @@ func testDropTables(t *testing.T, conn *DB) {
 	testCtx := context.Background()
 	rw := New(conn)
 	var query string
-	switch conn.Dialector.Name() {
+	switch conn.wrapped.Dialector.Name() {
 	case "sqlite":
 		query = testQueryDropTablesSqlite
 	case "postgres":
 		query = testQueryDropTablesPostgres
 	default:
-		t.Fatalf("unknown dialect: %s", conn.Dialector.Name())
+		t.Fatalf("unknown dialect: %s", conn.wrapped.Dialector.Name())
 	}
 	_, err := rw.Exec(testCtx, query, nil)
 	require.NoError(err)
