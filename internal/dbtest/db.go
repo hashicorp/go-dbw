@@ -2,6 +2,11 @@
 package dbtest
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/go-dbw"
+
 	"github.com/hashicorp/go-secure-stdlib/base62"
 	"google.golang.org/protobuf/proto"
 )
@@ -56,6 +61,16 @@ func (u *TestUser) SetTableName(name string) {
 	default:
 		u.table = name
 	}
+}
+
+var _ dbw.VetForWriter = (*TestUser)(nil)
+
+func (u *TestUser) VetForWrite(ctx context.Context, r dbw.Reader, opType dbw.OpType, opt ...dbw.Option) error {
+	const op = "dbtest.(TestUser).VetForWrite"
+	if u.PublicId == "" {
+		return fmt.Errorf("%s: missing public id: %w", op, dbw.ErrInvalidParameter)
+	}
+	return nil
 }
 
 type TestCar struct {

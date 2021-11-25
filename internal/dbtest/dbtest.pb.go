@@ -84,8 +84,8 @@ type StoreTestUser struct {
 	unknownFields protoimpl.UnknownFields
 
 	// public_id is the used to access the user via an API
-	// @inject_tag: gorm:"primary_key"
-	PublicId string `protobuf:"bytes,4,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty" gorm:"primary_key"`
+	// @inject_tag: gorm:"primary_key;default:null"
+	PublicId string `protobuf:"bytes,4,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty" gorm:"primary_key;default:null"`
 	// create_time from the RDBMS
 	// @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
 	CreateTime *Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty" gorm:"default:CURRENT_TIMESTAMP"`
@@ -192,7 +192,8 @@ type StoreTestCar struct {
 	unknownFields protoimpl.UnknownFields
 
 	// public_id is the used to access the car via an API
-	PublicId string `protobuf:"bytes,4,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty"`
+	// @inject_tag: gorm:"primary_key;default:null"
+	PublicId string `protobuf:"bytes,4,opt,name=public_id,json=publicId,proto3" json:"public_id,omitempty" gorm:"primary_key;default:null"`
 	// create_time from the RDBMS
 	// @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
 	CreateTime *Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty" gorm:"default:CURRENT_TIMESTAMP"`

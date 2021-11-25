@@ -28,7 +28,7 @@ func TestDb_Create(t *testing.T) {
 		user.CreateTime = ts
 		user.UpdateTime = ts
 		user.Name = "alice-" + id
-		err = w.Create(testCtx, user)
+		err = w.Create(testCtx, user, dbw.WithDebug(true))
 		require.NoError(err)
 		assert.NotEmpty(user.PublicId)
 		// make sure the database controlled the timestamp values
@@ -93,7 +93,7 @@ func TestDb_Create(t *testing.T) {
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
 		user.Name = "alice" + id
-		fn := func(i interface{}) error {
+		fn := func(i interface{}, rowAffected int) error {
 			u, ok := i.(*dbtest.TestUser)
 			require.True(ok)
 			rowsAffected, err := w.Exec(testCtx,
@@ -126,12 +126,15 @@ func TestDb_Create(t *testing.T) {
 		assert.Equal(foundUser.PublicId, user.PublicId)
 		assert.Equal("after"+id, foundUser.Name)
 
-		fn = func(i interface{}) error {
+		fn = func(i interface{}, rowsAffected int) error {
 			return errors.New("fail")
 		}
+
+		user2, err := dbtest.NewTestUser()
+		require.NoError(err)
 		err = w.Create(
 			context.Background(),
-			user,
+			user2,
 			dbw.WithAfterWrite(fn),
 		)
 		require.Error(err)
@@ -140,14 +143,26 @@ func TestDb_Create(t *testing.T) {
 	t.Run("nil-tx", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(nil)
-		id, err := dbw.NewPublicId("u")
-		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
-		user.Name = "foo-" + id
 		err = w.Create(context.Background(), user)
 		require.Error(err)
 		assert.Contains(err.Error(), "dbw.Create: missing underlying db: invalid parameter")
+	})
+	t.Run("nil-resource", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		w := dbw.New(db)
+		err := w.Create(context.Background(), nil)
+		require.Error(err)
+		assert.Contains(err.Error(), "dbw.Create: missing interface: invalid parameter")
+	})
+	t.Run("VetForWrite-err", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		w := dbw.New(db)
+		u := dbtest.AllocTestUser()
+		err := w.Create(context.Background(), &u)
+		require.Error(err)
+		assert.Contains(err.Error(), "dbtest.(TestUser).VetForWrite: missing public id: invalid parameter")
 	})
 }
 
@@ -176,13 +191,30 @@ func TestDb_Create_OnConflict(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		onConflict     dbw.OnConflict
-		additionalOpts []dbw.Option
-		wantUpdate     bool
-		wantEmail      string
-		withDebug      bool
+		name            string
+		onConflict      dbw.OnConflict
+		additionalOpts  []dbw.Option
+		wantUpdate      bool
+		wantEmail       string
+		withDebug       bool
+		wantErrContains string
 	}{
+		{
+			name: "invalid-target",
+			onConflict: dbw.OnConflict{
+				Target: "invalid",
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			wantErrContains: "dbw.Create: invalid conflict target string: invalid parameter",
+		},
+		{
+			name: "invalid-action",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: "invalid",
+			},
+			wantErrContains: "dbw.Create: invalid conflict action string: invalid parameter",
+		},
 		{
 			name: "set-columns",
 			onConflict: dbw.OnConflict{
@@ -302,6 +334,11 @@ func TestDb_Create_OnConflict(t *testing.T) {
 			err = rw.Create(ctx, conflictUser, opts...)
 			if tt.withDebug {
 				conn.Debug(false)
+			}
+			if tt.wantErrContains != "" {
+				require.Error(err)
+				assert.Contains(err.Error(), tt.wantErrContains)
+				return
 			}
 			require.NoError(err)
 			foundUser, err := dbtest.NewTestUser()
@@ -436,7 +473,19 @@ func TestDb_CreateItems(t *testing.T) {
 			c,
 		}
 	}
-
+	successBeforeFn := func(_ interface{}) error {
+		return nil
+	}
+	successAfterFn := func(_ interface{}, _ int) error {
+		return nil
+	}
+	errFailedFn := errors.New("fail")
+	failedBeforeFn := func(_ interface{}) error {
+		return errFailedFn
+	}
+	failedAfterFn := func(_ interface{}, _ int) error {
+		return errFailedFn
+	}
 	type args struct {
 		createItems []interface{}
 		opt         []dbw.Option
@@ -455,6 +504,42 @@ func TestDb_CreateItems(t *testing.T) {
 				createItems: createFn(),
 			},
 			wantErr: false,
+		},
+		{
+			name: "simple-with-before-after-success",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+				opt: []dbw.Option{
+					dbw.WithBeforeWrite(successBeforeFn),
+					dbw.WithAfterWrite(successAfterFn),
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "failed-with-before",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+				opt: []dbw.Option{
+					dbw.WithBeforeWrite(failedBeforeFn),
+				},
+			},
+			wantErr:   true,
+			wantErrIs: errFailedFn,
+		},
+		{
+			name: "failed-with-after",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+				opt: []dbw.Option{
+					dbw.WithAfterWrite(failedAfterFn),
+				},
+			},
+			wantErr:   true,
+			wantErrIs: errFailedFn,
 		},
 		{
 			name: "mixed items",

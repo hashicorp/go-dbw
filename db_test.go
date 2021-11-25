@@ -60,10 +60,18 @@ func TestOpen(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "invalid-sqlite",
+			name: "missing-url",
 			args: args{
 				dbType:        dbw.Sqlite,
 				connectionUrl: "",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid-url",
+			args: args{
+				dbType:        dbw.Sqlite,
+				connectionUrl: "file::memory:?cache=invalid-parameter",
 			},
 			wantErr: true,
 		},

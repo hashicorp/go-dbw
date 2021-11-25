@@ -31,6 +31,9 @@ func (rw *RW) ScanRows(rows *sql.Rows, result interface{}) error {
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
 	}
+	if rows == nil {
+		return fmt.Errorf("%s: missing rows: %w", op, ErrInvalidParameter)
+	}
 	if isNil(result) {
 		return fmt.Errorf("%s: missing result: %w", op, ErrInvalidParameter)
 	}

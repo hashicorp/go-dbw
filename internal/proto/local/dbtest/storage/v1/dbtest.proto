@@ -21,7 +21,7 @@ message Timestamp {
 // TestUser model
 message StoreTestUser {
   // public_id is the used to access the user via an API
-  // @inject_tag: gorm:"primary_key"
+  // @inject_tag: gorm:"primary_key;default:null"
   string public_id = 4;
 
   // create_time from the RDBMS
@@ -50,6 +50,7 @@ message StoreTestUser {
 // TestCar car model
 message StoreTestCar {
   // public_id is the used to access the car via an API
+  // @inject_tag: gorm:"primary_key;default:null"
   string public_id = 4;
 
   // create_time from the RDBMS

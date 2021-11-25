@@ -134,7 +134,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 		switch {
 		case onConflictDoNothing && tx.RowsAffected == 0:
 		default:
-			if err := opts.withAfterWrite(i); err != nil {
+			if err := opts.withAfterWrite(i, int(tx.RowsAffected)); err != nil {
 				return fmt.Errorf("%s: error after write: %w", op, err)
 			}
 		}
@@ -149,7 +149,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 // WithDebug, WithBeforeWrite, WithAfterWrite, WithReturnRowsAffected,
 // OnConflict, WithVersion, and WithWhere. WithLookup is not a supported option.
 func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error {
-	const op = "db.CreateItems"
+	const op = "dbw.CreateItems"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
@@ -176,10 +176,11 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 			return fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
+	var rowsAffected int64
 	for _, item := range createItems {
 		if err := rw.Create(ctx, item,
 			WithOnConflict(opts.withOnConflict),
-			WithReturnRowsAffected(opts.withRowsAffected),
+			WithReturnRowsAffected(&rowsAffected),
 			WithDebug(opts.withDebug),
 			WithVersion(opts.WithVersion),
 			WithWhere(opts.withWhereClause, opts.withWhereClauseArgs...),
@@ -187,8 +188,11 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
+	if opts.withRowsAffected != nil {
+		*opts.withRowsAffected = rowsAffected
+	}
 	if opts.withAfterWrite != nil {
-		if err := opts.withAfterWrite(createItems); err != nil {
+		if err := opts.withAfterWrite(createItems, int(rowsAffected)); err != nil {
 			return fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}

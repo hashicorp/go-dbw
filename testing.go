@@ -197,7 +197,7 @@ const (
 begin;
 
 create table if not exists db_test_user (
-  public_id text constraint db_test_user_pkey primary key,
+  public_id text not null constraint db_test_user_pkey primary key,
   create_time timestamp not null default current_timestamp,
   update_time timestamp not null default current_timestamp,
   name text unique,
