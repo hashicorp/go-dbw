@@ -22,6 +22,10 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	require := require.New(t)
 	var url string
 	var err error
+
+	InitNonUpdatableFields([]string{"CreateTime", "UpdateTime", "PublicId"})
+	InitNonCreatableFields([]string{"CreateTime", "UpdateTime"})
+
 	ctx := context.Background()
 
 	opts := getTestOpts(opt...)

@@ -64,32 +64,6 @@ func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string
 	return fieldNames, len(fieldNames) > 0, nil
 }
 
-// filterPaths will filter out non-updatable fields
-func filterPaths(paths []string) []string {
-	if len(paths) == 0 {
-		return nil
-	}
-	var filtered []string
-	for _, p := range paths {
-		switch {
-		case strings.EqualFold(p, "CreateTime"):
-			continue
-		case strings.EqualFold(p, "UpdateTime"):
-			continue
-		case strings.EqualFold(p, "PublicId"):
-			continue
-		default:
-			filtered = append(filtered, p)
-		}
-	}
-	return filtered
-}
-
-func setFieldsToNil(i interface{}, fieldNames []string) {
-	// Note: error cases are not handled
-	_ = Clear(i, fieldNames, 2)
-}
-
 func isNil(i interface{}) bool {
 	if i == nil {
 		return true
@@ -108,60 +82,6 @@ func contains(ss []string, t string) bool {
 		}
 	}
 	return false
-}
-
-// Clear sets fields in the value pointed to by i to their zero value.
-// Clear descends i to depth clearing fields at each level. i must be a
-// pointer to a struct. Cycles in i are not detected.
-//
-// A depth of 2 will change i and i's children. A depth of 1 will change i
-// but no children of i. A depth of 0 will return with no changes to i.
-func Clear(i interface{}, fields []string, depth int) error {
-	const op = "dbw.Clear"
-	if len(fields) == 0 || depth == 0 {
-		return nil
-	}
-	fm := make(map[string]bool)
-	for _, f := range fields {
-		fm[f] = true
-	}
-
-	v := reflect.ValueOf(i)
-
-	switch v.Kind() {
-	case reflect.Ptr:
-		if v.IsNil() || v.Elem().Kind() != reflect.Struct {
-			return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
-		}
-		clear(v, fm, depth)
-	default:
-		return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
-	}
-	return nil
-}
-
-func clear(v reflect.Value, fields map[string]bool, depth int) {
-	if depth == 0 {
-		return
-	}
-	depth--
-
-	switch v.Kind() {
-	case reflect.Ptr:
-		clear(v.Elem(), fields, depth+1)
-	case reflect.Struct:
-		typeOfT := v.Type()
-		for i := 0; i < v.NumField(); i++ {
-			f := v.Field(i)
-			if ok := fields[typeOfT.Field(i).Name]; ok {
-				if f.IsValid() && f.CanSet() {
-					f.Set(reflect.Zero(f.Type()))
-				}
-				continue
-			}
-			clear(f, fields, depth)
-		}
-	}
 }
 
 func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Options) (string, []interface{}, error) {

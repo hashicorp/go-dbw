@@ -4,9 +4,37 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync/atomic"
 
 	"gorm.io/gorm"
 )
+
+var nonUpdateFields atomic.Value
+
+// InitNonUpdatableFields sets the fields which are not updatable using
+// via RW.Update(...)
+func InitNonUpdatableFields(fields []string) {
+	m := make(map[string]struct{}, len(fields))
+	for _, f := range fields {
+		m[f] = struct{}{}
+	}
+	nonUpdateFields.Store(m)
+}
+
+// NonUpdatableFields returns the current set of fields which are not updatable using
+// via RW.Update(...)
+func NonUpdatableFields() []string {
+	m := nonUpdateFields.Load()
+	if m == nil {
+		return []string{}
+	}
+
+	fields := make([]string, 0, len(m.(map[string]struct{})))
+	for f := range m.(map[string]struct{}) {
+		fields = append(fields, f)
+	}
+	return fields
+}
 
 // Update an object in the db, fieldMask is required and provides
 // field_mask.proto paths for fields that should be updated. The i interface
@@ -122,4 +150,25 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 		return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
 	}
 	return rowsUpdated, nil
+}
+
+// filterPaths will filter out non-updatable fields
+func filterPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	nonUpdatable := NonUpdatableFields()
+	if len(nonUpdatable) == 0 {
+		return paths
+	}
+	var filtered []string
+	for _, p := range paths {
+		switch {
+		case contains(nonUpdatable, p):
+			continue
+		default:
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
 }

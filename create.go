@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync/atomic"
 
 	"gorm.io/gorm/clause"
 )
@@ -24,6 +25,32 @@ const (
 // CreateOp, no options are supported
 type VetForWriter interface {
 	VetForWrite(ctx context.Context, r Reader, opType OpType, opt ...Option) error
+}
+
+var nonCreateFields atomic.Value
+
+// InitNonCreatableFields sets the fields which are not setable using
+// via RW.Update(...)
+func InitNonCreatableFields(fields []string) {
+	m := make(map[string]struct{}, len(fields))
+	for _, f := range fields {
+		m[f] = struct{}{}
+	}
+	nonCreateFields.Store(m)
+}
+
+// NonCreatableFields returns the current set of fields which are not setable using
+// via RW.Create(...)
+func NonCreatableFields() []string {
+	m := nonCreateFields.Load()
+	if m == nil {
+		return []string{}
+	}
+	fields := make([]string, 0, len(m.(map[string]struct{})))
+	for f := range m.(map[string]struct{}) {
+		fields = append(fields, f)
+	}
+	return fields
 }
 
 // Create an object in the db with options: WithDebug, WithLookup,
@@ -50,7 +77,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 
 	// these fields should be nil, since they are not writeable and we want the
 	// db to manage them
-	setFieldsToNil(i, []string{"CreateTime", "UpdateTime"})
+	setFieldsToNil(i, NonCreatableFields())
 
 	if !opts.withSkipVetForWrite {
 		if vetter, ok := i.(VetForWriter); ok {
@@ -197,4 +224,63 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 		}
 	}
 	return nil
+}
+
+func setFieldsToNil(i interface{}, fieldNames []string) {
+	// Note: error cases are not handled
+	_ = Clear(i, fieldNames, 2)
+}
+
+// Clear sets fields in the value pointed to by i to their zero value.
+// Clear descends i to depth clearing fields at each level. i must be a
+// pointer to a struct. Cycles in i are not detected.
+//
+// A depth of 2 will change i and i's children. A depth of 1 will change i
+// but no children of i. A depth of 0 will return with no changes to i.
+func Clear(i interface{}, fields []string, depth int) error {
+	const op = "dbw.Clear"
+	if len(fields) == 0 || depth == 0 {
+		return nil
+	}
+	fm := make(map[string]bool)
+	for _, f := range fields {
+		fm[f] = true
+	}
+
+	v := reflect.ValueOf(i)
+
+	switch v.Kind() {
+	case reflect.Ptr:
+		if v.IsNil() || v.Elem().Kind() != reflect.Struct {
+			return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+		}
+		clear(v, fm, depth)
+	default:
+		return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+	}
+	return nil
+}
+
+func clear(v reflect.Value, fields map[string]bool, depth int) {
+	if depth == 0 {
+		return
+	}
+	depth--
+
+	switch v.Kind() {
+	case reflect.Ptr:
+		clear(v.Elem(), fields, depth+1)
+	case reflect.Struct:
+		typeOfT := v.Type()
+		for i := 0; i < v.NumField(); i++ {
+			f := v.Field(i)
+			if ok := fields[typeOfT.Field(i).Name]; ok {
+				if f.IsValid() && f.CanSet() {
+					f.Set(reflect.Zero(f.Type()))
+				}
+				continue
+			}
+			clear(f, fields, depth)
+		}
+	}
 }
