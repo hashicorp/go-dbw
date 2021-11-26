@@ -65,7 +65,7 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	if len(fieldMaskPaths) == 0 && len(setToNullPaths) == 0 {
 		return NoRowsAffected, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are missing: %w", op, ErrInvalidParameter)
 	}
-	opts := getOpts(opt...)
+	opts := GetOpts(opt...)
 
 	// we need to filter out some non-updatable fields (like: CreateTime, etc)
 	fieldMaskPaths = filterPaths(fieldMaskPaths)

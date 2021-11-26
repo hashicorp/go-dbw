@@ -73,7 +73,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	if isNil(i) {
 		return fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
-	opts := getOpts(opt...)
+	opts := GetOpts(opt...)
 
 	// these fields should be nil, since they are not writeable and we want the
 	// db to manage them
@@ -183,7 +183,7 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 	if len(createItems) == 0 {
 		return fmt.Errorf("%s: missing interfaces: %w", op, ErrInvalidParameter)
 	}
-	opts := getOpts(opt...)
+	opts := GetOpts(opt...)
 	if opts.withLookup {
 		return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
 	}

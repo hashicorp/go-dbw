@@ -39,7 +39,7 @@ func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder,
 
 func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {
 	const op = "dbw.lookupAfterWrite"
-	opts := getOpts(opt...)
+	opts := GetOpts(opt...)
 	withLookup := opts.withLookup
 
 	if !withLookup {
