@@ -114,6 +114,28 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 	default:
 		return nil, fmt.Errorf("unable to open %s database type", dbType)
 	}
+	return openDialector(dialect, opt...)
+}
+
+// Dialector provides a set of functions the database dialect must satisfy.
+// It's a simple wrapper of the gorm.Dialector and provides the ability to open
+// any support gorm dialect driver.
+type Dialector interface {
+	gorm.Dialector
+}
+
+// OpenWith will open a database connection using a Dialector which is
+// long-lived. The options of WithGormFormatter and WithMaxOpenConnections are
+// supported.
+//
+// Note: Consider if you need to call Close() on the returned DB.  Typically the
+// answer is no, but there are occasions when it's necessary.  See the sql.DB
+// docs for more information.
+func OpenWith(dialector Dialector, opt ...Option) (*DB, error) {
+	return openDialector(dialector, opt...)
+}
+
+func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 	db, err := gorm.Open(dialect, &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to open database: %w", err)

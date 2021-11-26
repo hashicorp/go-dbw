@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/sqlite"
 )
 
 func TestOpen(t *testing.T) {
@@ -106,6 +107,14 @@ func TestOpen(t *testing.T) {
 			require.NoError(err)
 		})
 	}
+}
+
+func TestDB_OpenWith(t *testing.T) {
+	t.Run("simple-sqlite", func(t *testing.T) {
+		assert := assert.New(t)
+		_, err := dbw.OpenWith(sqlite.Open("file::memory:"), nil)
+		assert.NoError(err)
+	})
 }
 
 func TestDB_StringToDbType(t *testing.T) {
