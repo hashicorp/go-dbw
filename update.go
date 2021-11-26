@@ -135,7 +135,7 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 		if underlying.Error == gorm.ErrRecordNotFound {
 			return NoRowsAffected, fmt.Errorf("%s: %w", op, gorm.ErrRecordNotFound)
 		}
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
+		return NoRowsAffected, fmt.Errorf("%s: %w", op, underlying.Error)
 	}
 	rowsUpdated := int(underlying.RowsAffected)
 	if rowsUpdated > 0 && (opts.withAfterWrite != nil) {

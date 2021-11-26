@@ -71,6 +71,9 @@ func (u *TestUser) VetForWrite(ctx context.Context, r dbw.Reader, opType dbw.OpT
 	if u.PublicId == "" {
 		return fmt.Errorf("%s: missing public id: %w", op, dbw.ErrInvalidParameter)
 	}
+	if u.Name == "fail-VetForWrite" {
+		return fmt.Errorf("%s: name was fail-VetForWrite: %w", op, dbw.ErrInvalidParameter)
+	}
 	switch opType {
 	case dbw.UpdateOp:
 		dbOptions := dbw.GetOpts(opt...)

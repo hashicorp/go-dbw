@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -153,10 +155,6 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 	return strings.Join(clauses, " and "), fieldValues, nil
 }
 
-func (_ *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error {
-	panic("todo")
-}
-
 func (_ *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
 	panic("todo")
 }
@@ -167,4 +165,22 @@ func (_ *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, err
 
 func (_ *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
 	panic("todo")
+}
+
+// LookupWhere will lookup the first resource using a where clause with parameters (it only returns the first one)
+func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error {
+	const op = "dbw.LookupWhere"
+	if rw.underlying == nil {
+		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+	}
+	if reflect.ValueOf(resource).Kind() != reflect.Ptr {
+		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	}
+	if err := rw.underlying.wrapped.Where(where, args...).First(resource).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
+		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
 }

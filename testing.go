@@ -551,9 +551,32 @@ before
 insert on db_test_rental
  for each row execute procedure default_create_time();
 
+-- update_version_column() will increment the version column whenever row data
+-- is updated and should only be used in an update after trigger.  This function
+-- will overwrite any explicit updates to the version column. The function
+-- accepts an optional parameter of 'private_id' for the tables primary key.
+create or replace function
+  update_rental_version_column()
+  returns trigger
+as $$
+begin
+  if pg_trigger_depth() = 1 then
+    if row(new.*) is distinct from row(old.*) then
+      if tg_nargs = 0 then
+        execute format('update %I set version = $1 where user_id = $2 and car_id = $3', tg_relid::regclass) using old.version+1, new.user_id, new.car_id;
+        new.version = old.version + 1;
+        return new;
+      end if;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
 create trigger update_version_column
 after update on db_test_rental
-	for each row execute procedure update_version_column();
+	for each row execute procedure update_rental_version_column();
+
 
 commit;
 	`
