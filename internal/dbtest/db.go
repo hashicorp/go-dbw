@@ -71,6 +71,20 @@ func (u *TestUser) VetForWrite(ctx context.Context, r dbw.Reader, opType dbw.OpT
 	if u.PublicId == "" {
 		return fmt.Errorf("%s: missing public id: %w", op, dbw.ErrInvalidParameter)
 	}
+	switch opType {
+	case dbw.UpdateOp:
+		dbOptions := dbw.GetOpts(opt...)
+		for _, path := range dbOptions.WithFieldMaskPaths {
+			switch path {
+			case "PublicId", "CreateTime", "UpdateTime":
+				return fmt.Errorf("%s: %s is immutable: %w", op, path, dbw.ErrInvalidParameter)
+			}
+		}
+	case dbw.CreateOp:
+		if u.CreateTime != nil {
+			return fmt.Errorf("%s: create time is set by the database: %w", op, dbw.ErrInvalidParameter)
+		}
+	}
 	return nil
 }
 
