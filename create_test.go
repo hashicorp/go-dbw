@@ -42,7 +42,7 @@ func TestDb_Create(t *testing.T) {
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
 	})
-	t.Run("WithBeforeCreate", func(t *testing.T) {
+	t.Run("WithBeforeWrite", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
 		id, err := dbw.NewId("u")
@@ -84,10 +84,9 @@ func TestDb_Create(t *testing.T) {
 		require.Error(err)
 
 	})
-	t.Run("WithAfterCreate", func(t *testing.T) {
+	t.Run("WithAfterWrite", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
-		db.Debug(true)
 		id, err := dbw.NewId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
@@ -389,7 +388,6 @@ func TestDb_Create_OnConflict(t *testing.T) {
 			PublicId: id,
 			Name:     "foo-" + id,
 		}
-		conn.Debug(true)
 		err = rw.Create(ctx, initialResource)
 		require.NoError(err)
 		assert.NotEmpty(initialResource.PublicId)
