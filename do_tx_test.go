@@ -8,7 +8,6 @@ import (
 
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
-	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -155,7 +154,7 @@ func TestDb_DoTx(t *testing.T) {
 	t.Run("updating-good-bad-good", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		rw := dbw.New(conn)
-		id, err := uuid.GenerateUUID()
+		id, err := dbw.NewId("i")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)

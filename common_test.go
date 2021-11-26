@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
 	"github.com/hashicorp/go-secure-stdlib/base62"
-	"github.com/hashicorp/go-uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -16,7 +15,7 @@ import (
 
 func TestUpdateFields(t *testing.T) {
 	a := assert.New(t)
-	id, err := uuid.GenerateUUID()
+	id, err := dbw.NewId("i")
 	a.NoError(err)
 
 	testPublicIdFn := func(t *testing.T) string {
