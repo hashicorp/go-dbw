@@ -284,6 +284,58 @@ when
 	update db_test_car set version = old.version + 1 where rowid = new.rowid;
 	end;
 
+
+create table if not exists db_test_rental (
+	user_id text not null references db_test_user(public_id),
+	car_id  text not null references db_test_car(public_id),
+	create_time timestamp not null default current_timestamp,
+	update_time timestamp not null default current_timestamp,
+	name text unique,
+	version int default 1,
+	constraint db_test_rental_pkey primary key(user_id, car_id)
+
+);
+
+create trigger update_time_column_db_test_rental
+before update on db_test_rental
+for each row 
+when 
+	new.user_id 	<> old.user_id or
+	new.car_id 		<> old.car_id or
+	new.name      	<> old.name or
+	new.version   	<> old.version 
+	begin
+		update db_test_rental set update_time = datetime('now','localtime') where rowid == new.rowid;
+	end;
+	  
+create trigger immutable_columns_db_test_rental
+before update on db_test_rental
+for each row 
+when 
+	new.create_time <> old.create_time
+	begin
+		select raise(abort, 'immutable column');
+	end;
+	  
+create trigger default_create_time_column_db_test_rental
+before insert on db_test_rental
+for each row
+begin
+	update db_test_rental set create_time = datetime('now','localtime') where rowid = new.rowid;
+end;
+	
+create trigger update_version_column_db_test_rental
+after update on db_test_rental
+for each row
+when 
+	new.user_id 	<> old.user_id or
+	new.car_id 		<> old.car_id or
+	new.name      	<> old.name or
+	new.version   	<> old.version 
+	begin
+		update db_test_rental set version = old.version + 1 where rowid = new.rowid;
+	end;
+
   commit;
 	`
 
@@ -418,7 +470,7 @@ is
 -- ########################################################################################
 
 create table if not exists db_test_user (
-	public_id text constraint db_test_user_pkey primary key,
+	public_id wt_public_id constraint db_test_user_pkey primary key,
 	create_time wt_timestamp,
 	update_time wt_timestamp,
 	name text unique,
@@ -448,10 +500,9 @@ after update on db_test_user
 	for each row execute procedure update_version_column();
 
 create table if not exists db_test_car (
-	id bigint generated always as identity primary key,
+	public_id wt_public_id constraint db_test_car_pkey primary key,
 	create_time wt_timestamp,
 	update_time wt_timestamp,
-	public_id text not null unique,
 	name text unique,
 	model text,
 	mpg smallint
@@ -472,7 +523,38 @@ create trigger default_create_time_column
 before
 insert on db_test_car
 	for each row execute procedure default_create_time();
+
 	
+create table if not exists db_test_rental (
+	user_id wt_public_id not null references db_test_user(public_id),
+	car_id wt_public_id not null references db_test_car(public_id),
+	create_time wt_timestamp,
+	update_time wt_timestamp,
+	name text unique,
+	version wt_version,
+	constraint db_test_rental_pkey primary key(user_id, car_id)
+);
+	
+create trigger update_time_column 
+before 
+update on db_test_rental 
+  for each row execute procedure update_time_column();
+	
+-- define the immutable fields for db_test_rental
+create trigger immutable_columns
+before
+update on db_test_rental
+ for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before
+insert on db_test_rental
+ for each row execute procedure default_create_time();
+
+create trigger update_version_column
+after update on db_test_rental
+	for each row execute procedure update_version_column();
+
 commit;
 	`
 
@@ -480,6 +562,7 @@ commit;
 begin;
 drop table if exists db_test_user;
 drop table if exists db_test_car;
+drop table if exists db_test_rental;
 commit;
 `
 
@@ -487,6 +570,7 @@ commit;
 begin;
 drop table if exists db_test_user cascade;
 drop table if exists db_test_car cascade;
+drop table if exists db_test_rental cascade;
 drop domain if exists wt_public_id;
 drop domain if exists wt_timestamp;
 drop domain if exists wt_version;

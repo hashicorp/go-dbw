@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	defaultUserTablename = "db_test_user"
-	defaultCarTableName  = "db_test_car"
+	defaultUserTablename   = "db_test_user"
+	defaultCarTableName    = "db_test_car"
+	defaultRentalTableName = "db_test_rental"
 )
 
 type TestUser struct {
@@ -110,4 +111,30 @@ type NotIder struct{}
 
 func (i *NotIder) Clone() interface{} {
 	return &NotIder{}
+}
+
+type TestRental struct {
+	*StoreTestRental
+	table string `gorm:"-"`
+}
+
+func NewTestRental(userId, carId string) (*TestRental, error) {
+	return &TestRental{
+		StoreTestRental: &StoreTestRental{
+			UserId: userId,
+			CarId:  carId,
+		},
+	}, nil
+}
+
+func (r *TestRental) TableName() string {
+	if r.table != "" {
+		return r.table
+	}
+
+	return defaultRentalTableName
+}
+
+func (r *TestRental) SetTableName(name string) {
+	r.table = name
 }
