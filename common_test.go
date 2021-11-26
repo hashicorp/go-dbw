@@ -19,6 +19,23 @@ func TestUpdateFields(t *testing.T) {
 	id, err := uuid.GenerateUUID()
 	a.NoError(err)
 
+	testPublicIdFn := func(t *testing.T) string {
+		t.Helper()
+		publicId, err := base62.Random(20)
+		assert.NoError(t, err)
+		return publicId
+	}
+	testUserFn := func(t *testing.T, name, email string) *dbtest.TestUser {
+		t.Helper()
+		return &dbtest.TestUser{
+			StoreTestUser: &dbtest.StoreTestUser{
+				PublicId: testPublicIdFn(t),
+				Name:     name,
+				Email:    email,
+			},
+		}
+	}
+
 	type args struct {
 		i              interface{}
 		fieldMaskPaths []string
@@ -45,7 +62,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "missing fieldmasks",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: nil,
 				setToNullPaths: []string{},
 			},
@@ -56,7 +73,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "missing null fields",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"Name"},
 				setToNullPaths: nil,
 			},
@@ -68,7 +85,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "all zero len",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{},
 				setToNullPaths: nil,
 			},
@@ -78,7 +95,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "not found masks",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"invalidFieldName"},
 				setToNullPaths: []string{},
 			},
@@ -89,7 +106,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "not found null paths",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: []string{"invalidFieldName"},
 			},
@@ -100,7 +117,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "intersection",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: []string{"name"},
 			},
@@ -111,7 +128,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "valid",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: []string{"email"},
 			},
@@ -125,7 +142,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "valid-just-masks",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{"name", "email"},
 				setToNullPaths: []string{},
 			},
@@ -139,7 +156,7 @@ func TestUpdateFields(t *testing.T) {
 		{
 			name: "valid-just-nulls",
 			args: args{
-				i:              testUser(t, id, id),
+				i:              testUserFn(t, id, id),
 				fieldMaskPaths: []string{},
 				setToNullPaths: []string{"name", "email"},
 			},
@@ -154,7 +171,7 @@ func TestUpdateFields(t *testing.T) {
 			name: "valid-not-embedded",
 			args: args{
 				i: dbtest.StoreTestUser{
-					PublicId: testPublicId(t),
+					PublicId: testPublicIdFn(t),
 					Name:     id,
 					Email:    "",
 				},
@@ -172,7 +189,7 @@ func TestUpdateFields(t *testing.T) {
 			name: "valid-not-embedded-just-masks",
 			args: args{
 				i: dbtest.StoreTestUser{
-					PublicId: testPublicId(t),
+					PublicId: testPublicIdFn(t),
 					Name:     id,
 					Email:    "",
 				},
@@ -189,7 +206,7 @@ func TestUpdateFields(t *testing.T) {
 			name: "valid-not-embedded-just-nulls",
 			args: args{
 				i: dbtest.StoreTestUser{
-					PublicId: testPublicId(t),
+					PublicId: testPublicIdFn(t),
 					Name:     id,
 					Email:    "",
 				},
@@ -206,7 +223,7 @@ func TestUpdateFields(t *testing.T) {
 			name: "not found null paths - not embedded",
 			args: args{
 				i: dbtest.StoreTestUser{
-					PublicId: testPublicId(t),
+					PublicId: testPublicIdFn(t),
 					Name:     id,
 					Email:    "",
 				},
@@ -240,30 +257,12 @@ func TestUpdateFields(t *testing.T) {
 				Nanos:   1,
 			},
 		}
-		u := testUser(t, "", "")
+		u := testUserFn(t, "", "")
 		u.UpdateTime = wantTs
 		got, err := dbw.UpdateFields(u, []string{"UpdateTime"}, nil)
 		require.NoError(err)
 		assert.True(proto.Equal(wantTs, got["UpdateTime"].(*dbtest.Timestamp)))
 	})
-}
-
-func testUser(t *testing.T, name, email string) *dbtest.TestUser {
-	t.Helper()
-	return &dbtest.TestUser{
-		StoreTestUser: &dbtest.StoreTestUser{
-			PublicId: testPublicId(t),
-			Name:     name,
-			Email:    email,
-		},
-	}
-}
-
-func testPublicId(t *testing.T) string {
-	t.Helper()
-	publicId, err := base62.Random(20)
-	assert.NoError(t, err)
-	return publicId
 }
 
 func TestBuildUpdatePaths(t *testing.T) {
