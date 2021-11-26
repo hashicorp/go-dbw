@@ -47,6 +47,44 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 	return int(db.RowsAffected), nil
 }
 
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
+	const op = "db.primaryFieldsAreZero"
+	var fieldNames []string
+	tx := rw.underlying.wrapped.Model(i)
+	if err := tx.Statement.Parse(i); err != nil {
+		return nil, false, fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+	}
+	for _, f := range tx.Statement.Schema.PrimaryFields {
+		if f.PrimaryKey {
+			if _, isZero := f.ValueOf(reflect.ValueOf(i)); isZero {
+				fieldNames = append(fieldNames, f.Name)
+			}
+		}
+	}
+	return fieldNames, len(fieldNames) > 0, nil
+}
+
+// filterPaths will filter out non-updatable fields
+func filterPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	var filtered []string
+	for _, p := range paths {
+		switch {
+		case strings.EqualFold(p, "CreateTime"):
+			continue
+		case strings.EqualFold(p, "UpdateTime"):
+			continue
+		case strings.EqualFold(p, "PublicId"):
+			continue
+		default:
+			filtered = append(filtered, p)
+		}
+	}
+	return filtered
+}
+
 func setFieldsToNil(i interface{}, fieldNames []string) {
 	// Note: error cases are not handled
 	_ = Clear(i, fieldNames, 2)
@@ -200,10 +238,6 @@ func (_ *RW) LookupWhere(ctx context.Context, resource interface{}, where string
 }
 
 func (_ *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
-	panic("todo")
-}
-
-func (_ *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
 	panic("todo")
 }
 

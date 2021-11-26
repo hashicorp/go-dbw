@@ -8,4 +8,5 @@ var (
 	ErrInternal         = errors.New("internal error")
 	ErrRecordNotFound   = errors.New("record not found")
 	ErrMaxRetries       = errors.New("too many retries")
+	ErrInvalidFieldMask = errors.New("invalid field mask")
 )
