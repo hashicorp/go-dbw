@@ -22,7 +22,7 @@ func TestDb_Query(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		rw := dbw.New(conn)
-		publicId, err := dbw.NewPublicId("u")
+		publicId, err := dbw.NewId("u")
 		require.NoError(err)
 		rowsAffected, err := rw.Exec(testCtx, insert, []interface{}{
 			sql.Named("public_id", publicId),

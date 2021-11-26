@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-secure-stdlib/base62"
 	"github.com/xo/dburl"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +61,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		db, err := Open(Postgres, u.DSN)
 		require.NoError(err)
 		rw := New(db)
-		tmpDbName, err := newId("go_db_tmp")
+		tmpDbName, err := NewId("go_db_tmp")
 		tmpDbName = strings.ToLower(tmpDbName)
 		require.NoError(err)
 		_, err = rw.Exec(ctx, fmt.Sprintf(`create database "%s"`, tmpDbName), nil)
@@ -149,14 +148,6 @@ func WithTestDatabaseUrl(url string) TestOption {
 	return func(o *testOptions) {
 		o.withTestDatabaseUrl = url
 	}
-}
-
-func TestId(t *testing.T) string {
-	t.Helper()
-	require := require.New(t)
-	id, err := base62.Random(20)
-	require.NoError(err)
-	return id
 }
 
 // TestCreateTables will create the test tables for the db pkg

@@ -17,8 +17,9 @@ func TestDb_Exec(t *testing.T) {
 	t.Run("update", func(t *testing.T) {
 		require := require.New(t)
 		w := dbw.New(conn)
-		id := dbw.TestId(t)
-		_, err := w.Exec(testCtx,
+		id, err := dbw.NewId("i")
+		require.NoError(err)
+		_, err = w.Exec(testCtx,
 			"insert into db_test_user(public_id, name) values(@public_id, @name)",
 			[]interface{}{
 				sql.Named("public_id", id),

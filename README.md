@@ -29,7 +29,7 @@ a complete list of capabilities and their documentation.
     conn, _ := dbw.Open(dialect, url)    
     rw := dbw.New(conn)
 
-    id, _ := dbw.NewPublicId("u")
+    id, _ := dbw.NewId("u")
     user, _ := dbtest.NewTestUser()
     _ = rw.Create(context.Background(), user)
    

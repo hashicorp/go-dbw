@@ -20,7 +20,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("simple", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
-		id, err := dbw.NewPublicId("u")
+		id, err := dbw.NewId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -45,7 +45,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("WithBeforeCreate", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
-		id, err := dbw.NewPublicId("u")
+		id, err := dbw.NewId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -88,7 +88,7 @@ func TestDb_Create(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(db)
 		db.Debug(true)
-		id, err := dbw.NewPublicId("u")
+		id, err := dbw.NewId("u")
 		require.NoError(err)
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
@@ -175,7 +175,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 
 	createInitialUser := func() *dbtest.TestUser {
 		// create initial user for on conflict tests
-		id, err := dbw.NewPublicId("test-user")
+		id, err := dbw.NewId("test-user")
 		require.NoError(t, err)
 		initialUser, err := dbtest.NewTestUser()
 		require.NoError(t, err)
@@ -319,7 +319,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 			initialUser := createInitialUser()
 			conflictUser, err := dbtest.NewTestUser()
 			require.NoError(err)
-			userNameId, err := dbw.NewPublicId("test-user-name")
+			userNameId, err := dbw.NewId("test-user-name")
 			require.NoError(err)
 			conflictUser.PublicId = initialUser.PublicId
 			conflictUser.Name = userNameId
@@ -383,7 +383,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 		require.NoError(err)
 
 		// create initial resource for the test
-		id, err := dbw.NewPublicId("test")
+		id, err := dbw.NewId("test")
 		require.NoError(err)
 		initialResource := &dbTestUpdateAll{
 			PublicId: id,
@@ -394,7 +394,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 		require.NoError(err)
 		assert.NotEmpty(initialResource.PublicId)
 
-		nameId, err := dbw.NewPublicId("test-name")
+		nameId, err := dbw.NewId("test-name")
 		require.NoError(err)
 		conflictResource := &dbTestUpdateAll{
 			PublicId: id,
@@ -424,7 +424,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 		initialUser := createInitialUser()
 		conflictUser, err := dbtest.NewTestUser()
 		require.NoError(err)
-		userNameId, err := dbw.NewPublicId("test-user-name")
+		userNameId, err := dbw.NewId("test-user-name")
 		require.NoError(err)
 		conflictUser.PublicId = initialUser.PublicId
 		conflictUser.Name = userNameId

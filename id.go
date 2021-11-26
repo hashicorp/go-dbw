@@ -9,16 +9,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-func NewPrivateId(prefix string, opt ...Option) (string, error) {
-	return newId(prefix, opt...)
-}
-
-// NewPublicId creates a new public id with the prefix
-func NewPublicId(prefix string, opt ...Option) (string, error) {
-	return newId(prefix, opt...)
-}
-
-func newId(prefix string, opt ...Option) (string, error) {
+func NewId(prefix string, opt ...Option) (string, error) {
 	const op = "dbw.newId"
 	if prefix == "" {
 		return "", fmt.Errorf("%s: missing prefix: %w", op, ErrInvalidParameter)
