@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	defaultUserTablename   = "db_test_user"
-	defaultCarTableName    = "db_test_car"
-	defaultRentalTableName = "db_test_rental"
+	defaultUserTablename    = "db_test_user"
+	defaultCarTableName     = "db_test_car"
+	defaultRentalTableName  = "db_test_rental"
+	defaultScooterTableName = "db_test_scooter"
 )
 
 type TestUser struct {
@@ -144,6 +145,14 @@ func NewTestRental(userId, carId string) (*TestRental, error) {
 	}, nil
 }
 
+// Clone is useful when you're retrying transactions and you need to send the user several times
+func (t *TestRental) Clone() interface{} {
+	s := proto.Clone(t.StoreTestRental)
+	return &TestRental{
+		StoreTestRental: s.(*StoreTestRental),
+	}
+}
+
 func (r *TestRental) TableName() string {
 	if r.table != "" {
 		return r.table
@@ -154,4 +163,39 @@ func (r *TestRental) TableName() string {
 
 func (r *TestRental) SetTableName(name string) {
 	r.table = name
+}
+
+type TestScooter struct {
+	*StoreTestScooter
+	table string `gorm:"-"`
+}
+
+func NewTestScooter() (*TestScooter, error) {
+	privateId, err := base62.Random(20)
+	if err != nil {
+		return nil, err
+	}
+	return &TestScooter{
+		StoreTestScooter: &StoreTestScooter{
+			PrivateId: privateId,
+		},
+	}, nil
+}
+
+func (t *TestScooter) Clone() interface{} {
+	s := proto.Clone(t.StoreTestScooter)
+	return &TestScooter{
+		StoreTestScooter: s.(*StoreTestScooter),
+	}
+}
+
+func (t *TestScooter) TableName() string {
+	if t.table != "" {
+		return t.table
+	}
+	return defaultScooterTableName
+}
+
+func (t *TestScooter) SetTableName(name string) {
+	t.table = name
 }

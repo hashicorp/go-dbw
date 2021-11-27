@@ -336,6 +336,49 @@ when
 		update db_test_rental set version = old.version + 1 where rowid = new.rowid;
 	end;
 
+create table if not exists db_test_scooter (
+	private_id text constraint db_test_scooter_pkey primary key,
+	create_time timestamp not null default current_timestamp,
+	update_time timestamp not null default current_timestamp,
+	name text unique,
+	model text,
+	mpg smallint,
+	version int default 1
+);
+
+create trigger update_time_column_db_test_scooter
+before update on db_test_scooter
+for each row 
+when 
+  new.private_id 	<> old.private_id or
+  new.name      	<> old.name or
+  new.model 		<> old.model or
+  new.mpg     		<> old.mpg or
+  new.version   	<> old.version 
+  begin
+    update db_test_scooter set update_time = datetime('now','localtime') where rowid == new.rowid;
+  end;
+
+  create trigger default_create_time_column_db_test_scooter
+  before insert on db_test_scooter
+  for each row
+	begin
+	  update db_test_scooter set create_time = datetime('now','localtime') where rowid = new.rowid;
+	end;
+  
+create trigger update_version_column_db_test_scooter
+after update on db_test_scooter
+for each row
+when 
+	new.private_id 	<> old.private_id or
+	new.name      	<> old.name or
+	new.model  		<> old.model or
+	new.mpg     	<> old.mpg
+	begin
+	update db_test_scooter set version = old.version + 1 where rowid = new.rowid;
+	end;
+
+
   commit;
 	`
 
@@ -347,6 +390,14 @@ check(
   length(trim(value)) > 10
 );
 comment on domain wt_public_id is
+'Random ID generated with github.com/hashicorp/go-secure-stdlib/base62';
+
+create domain wt_private_id as text
+not null
+check(
+  length(trim(value)) > 10
+);
+comment on domain wt_private_id is
 'Random ID generated with github.com/hashicorp/go-secure-stdlib/base62';
 
 drop domain if exists wt_timestamp;
@@ -577,6 +628,28 @@ create trigger update_version_column
 after update on db_test_rental
 	for each row execute procedure update_rental_version_column();
 
+create table if not exists db_test_scooter (
+	private_id wt_private_id constraint db_test_scooter_pkey primary key,
+	create_time wt_timestamp,
+	update_time wt_timestamp,
+	name text unique,
+	model text,
+	mpg smallint
+);
+
+create trigger update_time_column 
+before update on db_test_scooter 
+	for each row execute procedure update_time_column();
+
+
+-- define the immutable fields for db_test_scooter
+create trigger immutable_columns
+before update on db_test_scooter
+	for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before insert on db_test_scooter
+	for each row execute procedure default_create_time();  
 
 commit;
 	`
@@ -586,6 +659,7 @@ begin;
 drop table if exists db_test_user;
 drop table if exists db_test_car;
 drop table if exists db_test_rental;
+drop table if exists db_test_scooter;
 commit;
 `
 
@@ -594,7 +668,9 @@ begin;
 drop table if exists db_test_user cascade;
 drop table if exists db_test_car cascade;
 drop table if exists db_test_rental cascade;
+drop table if exists db_test_scooter cascade;
 drop domain if exists wt_public_id;
+drop domain if exists wt_private_id;
 drop domain if exists wt_timestamp;
 drop domain if exists wt_version;
 commit;
