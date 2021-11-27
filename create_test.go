@@ -163,6 +163,27 @@ func TestDb_Create(t *testing.T) {
 		require.Error(err)
 		assert.Contains(err.Error(), "dbtest.(TestUser).VetForWrite: missing public id: invalid parameter")
 	})
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"before-create", &dbtest.TestWithBeforeCreate{}},
+			{"after-create", &dbtest.TestWithAfterCreate{}},
+			{"before-save", &dbtest.TestWithBeforeSave{}},
+			{"before-save", &dbtest.TestWithAfterSave{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(db)
+				err := w.Create(context.Background(), tt.resource)
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+			})
+		}
+	})
 }
 
 func TestDb_Create_OnConflict(t *testing.T) {
@@ -607,6 +628,27 @@ func TestDb_CreateItems(t *testing.T) {
 			}
 		})
 	}
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"before-create", &dbtest.TestWithBeforeCreate{}},
+			{"after-create", &dbtest.TestWithAfterCreate{}},
+			{"before-save", &dbtest.TestWithBeforeSave{}},
+			{"before-save", &dbtest.TestWithAfterSave{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(conn)
+				err := w.CreateItems(context.Background(), []interface{}{tt.resource})
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+			})
+		}
+	})
 }
 
 type dbTestUpdateAll struct {

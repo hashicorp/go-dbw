@@ -62,6 +62,9 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	if isNil(i) {
 		return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
+	if err := raiseErrorOnHooks(i); err != nil {
+		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+	}
 	if len(fieldMaskPaths) == 0 && len(setToNullPaths) == 0 {
 		return noRowsAffected, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are missing: %w", op, ErrInvalidParameter)
 	}

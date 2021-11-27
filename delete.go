@@ -18,6 +18,9 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 	if isNil(i) {
 		return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
+	if err := raiseErrorOnHooks(i); err != nil {
+		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+	}
 	opts := GetOpts(opt...)
 
 	mDb := rw.underlying.wrapped.Model(i)
@@ -64,6 +67,9 @@ func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ..
 	}
 	if len(deleteItems) == 0 {
 		return noRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)
+	}
+	if err := raiseErrorOnHooks(deleteItems); err != nil {
+		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
 	if opts.withLookup {

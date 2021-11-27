@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-dbw"
+	"gorm.io/gorm"
 
 	"github.com/hashicorp/go-secure-stdlib/base62"
 	"google.golang.org/protobuf/proto"
@@ -198,4 +199,40 @@ func (t *TestScooter) TableName() string {
 
 func (t *TestScooter) SetTableName(name string) {
 	t.table = name
+}
+
+type TestWithBeforeCreate struct{}
+
+func (t *TestWithBeforeCreate) BeforeCreate(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithAfterCreate struct{}
+
+func (t *TestWithAfterCreate) AfterCreate(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithBeforeSave struct{}
+
+func (t *TestWithBeforeSave) BeforeSave(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithAfterSave struct{}
+
+func (t *TestWithAfterSave) AfterSave(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithBeforeUpdate struct{}
+
+func (t *TestWithBeforeUpdate) BeforeUpdate(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithAfterUpdate struct{}
+
+func (t *TestWithAfterUpdate) AfterUpdate(_ *gorm.DB) error {
+	return nil
 }

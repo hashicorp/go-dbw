@@ -543,4 +543,24 @@ func TestDb_Update(t *testing.T) {
 		assert.Equal(0, rowsUpdated)
 		assert.Equal("dbw.Update: primary key is not set for: [UserId]: invalid parameter", err.Error())
 	})
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"before-update", &dbtest.TestWithBeforeUpdate{}},
+			{"after-update", &dbtest.TestWithAfterUpdate{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(conn)
+				rowsUpdated, err := w.Update(context.Background(), tt.resource, []string{"Name"}, nil)
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+				assert.Equal(0, rowsUpdated)
+			})
+		}
+	})
 }

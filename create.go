@@ -75,6 +75,9 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	if isNil(i) {
 		return fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
+	if err := raiseErrorOnHooks(i); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	opts := GetOpts(opt...)
 
 	// these fields should be nil, since they are not writeable and we want the
@@ -178,6 +181,9 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 	}
 	if len(createItems) == 0 {
 		return fmt.Errorf("%s: missing interfaces: %w", op, ErrInvalidParameter)
+	}
+	if err := raiseErrorOnHooks(createItems); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
 	if opts.withLookup {

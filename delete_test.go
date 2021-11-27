@@ -207,6 +207,26 @@ func TestDb_Delete(t *testing.T) {
 		// 	require.NoError(err)
 		// 	assert.Equal(1, rowsDeleted)
 		// })
+		t.Run("hooks", func(t *testing.T) {
+			hookTests := []struct {
+				name     string
+				resource interface{}
+			}{
+				{"before-update", &dbtest.TestWithBeforeDelete{}},
+				{"after-update", &dbtest.TestWithAfterDelete{}},
+			}
+			for _, tt := range hookTests {
+				t.Run(tt.name, func(t *testing.T) {
+					assert, require := assert.New(t), require.New(t)
+					w := dbw.New(db)
+					rowsUpdated, err := w.Delete(context.Background(), tt.resource)
+					require.Error(err)
+					assert.ErrorIs(err, dbw.ErrInvalidParameter)
+					assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+					assert.Equal(0, rowsUpdated)
+				})
+			}
+		})
 	}
 }
 
@@ -374,4 +394,25 @@ func TestDb_DeleteItems(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"before-update", &dbtest.TestWithBeforeDelete{}},
+			{"after-update", &dbtest.TestWithAfterDelete{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(db)
+				rowsUpdated, err := w.DeleteItems(context.Background(), []interface{}{tt.resource})
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+				assert.Equal(0, rowsUpdated)
+			})
+		}
+	})
 }
