@@ -13,27 +13,27 @@ import (
 func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
 	const op = "dbw.Delete"
 	if rw.underlying == nil {
-		return NoRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
 	if isNil(i) {
-		return NoRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
 	opts := GetOpts(opt...)
 
 	mDb := rw.underlying.wrapped.Model(i)
 	err := mDb.Statement.Parse(i)
 	if err == nil && mDb.Statement.Schema == nil {
-		return NoRowsAffected, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
+		return noRowsAffected, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
 	}
 	reflectValue := reflect.Indirect(reflect.ValueOf(i))
 	for _, pf := range mDb.Statement.Schema.PrimaryFields {
 		if _, isZero := pf.ValueOf(reflectValue); isZero {
-			return NoRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
+			return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
 		}
 	}
 	if opts.withBeforeWrite != nil {
 		if err := opts.withBeforeWrite(i); err != nil {
-			return NoRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	db := rw.underlying.wrapped
@@ -45,7 +45,7 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 	}
 	db = db.Delete(i)
 	if db.Error != nil {
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
+		return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
 	rowsDeleted := int(db.RowsAffected)
 	if rowsDeleted > 0 && opts.withAfterWrite != nil {
@@ -60,14 +60,14 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
 	const op = "dbw.DeleteItems"
 	if rw.underlying == nil {
-		return NoRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
 	if len(deleteItems) == 0 {
-		return NoRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)
 	}
 	opts := GetOpts(opt...)
 	if opts.withLookup {
-		return NoRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
 	}
 	// verify that createItems are all the same type.
 	var foundType reflect.Type
@@ -77,12 +77,12 @@ func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ..
 		}
 		currentType := reflect.TypeOf(v)
 		if foundType != currentType {
-			return NoRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
+			return noRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
 		}
 	}
 	if opts.withBeforeWrite != nil {
 		if err := opts.withBeforeWrite(deleteItems); err != nil {
-			return NoRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	rowsDeleted := 0

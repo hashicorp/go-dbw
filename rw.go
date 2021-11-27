@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	NoRowsAffected = 0
+	noRowsAffected = 0
 
-	// DefaultLimit is the default for results for boundary
+	// DefaultLimit is the default for search results when no limit is specified
+	// via the WithLimit(...) option
 	DefaultLimit = 10000
 )
 
@@ -43,11 +44,11 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
 	}
 	if sql == "" {
-		return NoRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
 	db := rw.underlying.wrapped.Exec(sql, values...)
 	if db.Error != nil {
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
+		return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
 	return int(db.RowsAffected), nil
 }

@@ -57,13 +57,13 @@ func NonUpdatableFields() []string {
 func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
 	const op = "dbw.Update"
 	if rw.underlying == nil {
-		return NoRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
 	if isNil(i) {
-		return NoRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
 	}
 	if len(fieldMaskPaths) == 0 && len(setToNullPaths) == 0 {
-		return NoRowsAffected, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are missing: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are missing: %w", op, ErrInvalidParameter)
 	}
 	opts := GetOpts(opt...)
 
@@ -71,50 +71,50 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	fieldMaskPaths = filterPaths(fieldMaskPaths)
 	setToNullPaths = filterPaths(setToNullPaths)
 	if len(fieldMaskPaths) == 0 && len(setToNullPaths) == 0 {
-		return NoRowsAffected, fmt.Errorf("%s: after filtering non-updated fields, there are no fields left in fieldMaskPaths or setToNullPaths: %w", op, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: after filtering non-updated fields, there are no fields left in fieldMaskPaths or setToNullPaths: %w", op, ErrInvalidParameter)
 	}
 
 	updateFields, err := UpdateFields(i, fieldMaskPaths, setToNullPaths)
 	if err != nil {
-		return NoRowsAffected, fmt.Errorf("%s: getting update fields failed: %w", op, err)
+		return noRowsAffected, fmt.Errorf("%s: getting update fields failed: %w", op, err)
 	}
 	if len(updateFields) == 0 {
-		return NoRowsAffected, fmt.Errorf("%s: no fields matched using fieldMaskPaths %s: %w", op, fieldMaskPaths, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: no fields matched using fieldMaskPaths %s: %w", op, fieldMaskPaths, ErrInvalidParameter)
 	}
 
 	names, isZero, err := rw.primaryFieldsAreZero(ctx, i)
 	if err != nil {
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
+		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 	}
 	if isZero {
-		return NoRowsAffected, fmt.Errorf("%s: primary key is not set for: %s: %w", op, names, ErrInvalidParameter)
+		return noRowsAffected, fmt.Errorf("%s: primary key is not set for: %s: %w", op, names, ErrInvalidParameter)
 	}
 
 	mDb := rw.underlying.wrapped.Model(i)
 	err = mDb.Statement.Parse(i)
 	if err != nil || mDb.Statement.Schema == nil {
-		return NoRowsAffected, fmt.Errorf("%s: internal error: unable to parse stmt: %w", op, err)
+		return noRowsAffected, fmt.Errorf("%s: internal error: unable to parse stmt: %w", op, err)
 	}
 	reflectValue := reflect.Indirect(reflect.ValueOf(i))
 	for _, pf := range mDb.Statement.Schema.PrimaryFields {
 		if _, isZero := pf.ValueOf(reflectValue); isZero {
-			return NoRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
+			return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
 		}
 		if contains(fieldMaskPaths, pf.Name) {
-			return NoRowsAffected, fmt.Errorf("%s: not allowed on primary key field %s: %w", op, pf.Name, ErrInvalidFieldMask)
+			return noRowsAffected, fmt.Errorf("%s: not allowed on primary key field %s: %w", op, pf.Name, ErrInvalidFieldMask)
 		}
 	}
 
 	if !opts.withSkipVetForWrite {
 		if vetter, ok := i.(VetForWriter); ok {
 			if err := vetter.VetForWrite(ctx, rw, UpdateOp, WithFieldMaskPaths(fieldMaskPaths), WithNullPaths(setToNullPaths)); err != nil {
-				return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
+				return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 			}
 		}
 	}
 	if opts.withBeforeWrite != nil {
 		if err := opts.withBeforeWrite(i); err != nil {
-			return NoRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	underlying := rw.underlying.wrapped.Model(i)
@@ -125,7 +125,7 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	case opts.WithVersion != nil || opts.withWhereClause != "":
 		where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
 		if err != nil {
-			return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
+			return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 		}
 		underlying = underlying.Where(where, args...).Updates(updateFields)
 	default:
@@ -133,9 +133,9 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	}
 	if underlying.Error != nil {
 		if underlying.Error == gorm.ErrRecordNotFound {
-			return NoRowsAffected, fmt.Errorf("%s: %w", op, gorm.ErrRecordNotFound)
+			return noRowsAffected, fmt.Errorf("%s: %w", op, gorm.ErrRecordNotFound)
 		}
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, underlying.Error)
+		return noRowsAffected, fmt.Errorf("%s: %w", op, underlying.Error)
 	}
 	rowsUpdated := int(underlying.RowsAffected)
 	if rowsUpdated > 0 && (opts.withAfterWrite != nil) {
@@ -147,7 +147,7 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	// from the db
 	opt = append(opt, WithLookup(true))
 	if err := rw.lookupAfterWrite(ctx, i, opt...); err != nil {
-		return NoRowsAffected, fmt.Errorf("%s: %w", op, err)
+		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 	}
 	return rowsUpdated, nil
 }
