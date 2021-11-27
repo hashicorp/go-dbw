@@ -21,7 +21,7 @@ message Timestamp {
 // TestUser model
 message StoreTestUser {
   // public_id is the used to access the user via an API
-  // @inject_tag: gorm:"primary_key;default:null"
+  // @inject_tag: gorm:"primaryKey;default:null"
   string public_id = 4;
 
   // create_time from the RDBMS
@@ -50,7 +50,7 @@ message StoreTestUser {
 // TestCar car model
 message StoreTestCar {
   // public_id is the used to access the car via an API
-  // @inject_tag: gorm:"primary_key;default:null"
+  // @inject_tag: gorm:"primaryKey;default:null"
   string public_id = 4;
 
   // create_time from the RDBMS
@@ -77,10 +77,10 @@ message StoreTestCar {
 
 // TestRental for test rental model
 message StoreTestRental {
-  // @inject_tag: `gorm:"primary_key"`
+  // @inject_tag: `gorm:"primaryKey"`
   string user_id = 1;
 
-  // @inject_tag: `gorm:"primary_key"`
+  // @inject_tag: `gorm:"primaryKey"`
   string car_id = 2;
 
   // create_time from the RDBMS
@@ -105,7 +105,7 @@ message StoreTestRental {
 message StoreTestScooter {
   // private_id is the used to access scooter, but not intended to be available
   // via the API
-  // @inject_tag: `gorm:"primary_key"`
+  // @inject_tag: `gorm:"primaryKey"`
   string private_id = 1;
 
   // create_time from the RDBMS

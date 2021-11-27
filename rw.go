@@ -50,7 +50,7 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 }
 
 func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
-	const op = "db.primaryFieldsAreZero"
+	const op = "dbw.primaryFieldsAreZero"
 	var fieldNames []string
 	tx := rw.underlying.wrapped.Model(i)
 	if err := tx.Statement.Parse(i); err != nil {
@@ -153,14 +153,6 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 		clauses = append(clauses, fmt.Sprintf("%s = ?", col))
 	}
 	return strings.Join(clauses, " and "), fieldValues, nil
-}
-
-func (_ *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
-	panic("todo")
-}
-
-func (_ *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
-	panic("todo")
 }
 
 // LookupWhere will lookup the first resource using a where clause with parameters (it only returns the first one)
