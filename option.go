@@ -63,7 +63,7 @@ func getDefaultOptions() Options {
 }
 
 // WithBeforeWrite provides and option to provide a func to be called before a
-// write operation. The i interface{} passed at runtime will be the resource
+// write operation. The i interface{} passed at runtime will be the resource(s)
 // being written.
 func WithBeforeWrite(fn func(i interface{}) error) Option {
 	return func(o *Options) {
@@ -72,7 +72,7 @@ func WithBeforeWrite(fn func(i interface{}) error) Option {
 }
 
 // WithAfterWrite provides and option to provide a func to be called after a
-// write operation.  The i interface{} passed at runtime will be the resource
+// write operation.  The i interface{} passed at runtime will be the resource(s)
 // being written.
 func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option {
 	return func(o *Options) {
@@ -80,21 +80,23 @@ func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option {
 	}
 }
 
-// WithLookup enables a lookup.
+// WithLookup enables a lookup after a write operation.
 func WithLookup(enable bool) Option {
 	return func(o *Options) {
 		o.withLookup = enable
 	}
 }
 
-// WithFieldMaskPaths provides an option to provide field mask paths.
+// WithFieldMaskPaths provides an option to provide field mask paths for update
+// operations.
 func WithFieldMaskPaths(paths []string) Option {
 	return func(o *Options) {
 		o.WithFieldMaskPaths = paths
 	}
 }
 
-// WithNullPaths provides an option to provide null paths.
+// WithNullPaths provides an option to provide null paths for update operations.
+//
 func WithNullPaths(paths []string) Option {
 	return func(o *Options) {
 		o.WithNullPaths = paths
@@ -103,14 +105,18 @@ func WithNullPaths(paths []string) Option {
 
 // WithLimit provides an option to provide a limit.  Intentionally allowing
 // negative integers.   If WithLimit < 0, then unlimited results are returned.
-// If WithLimit == 0, then default limits are used for results.
+// If WithLimit == 0, then default limits are used for results (see DefaultLimit
+// const).
 func WithLimit(limit int) Option {
 	return func(o *Options) {
 		o.WithLimit = limit
 	}
 }
 
-// WithVersion provides an option version number for update operations.
+// WithVersion provides an option version number for update operations.  Using
+// this option requires that your resource has a version column that's
+// incremented for every successful update operation.  Version provides an
+// optimistic locking mechanism for write operations.
 func WithVersion(version *uint32) Option {
 	return func(o *Options) {
 		o.WithVersion = version
@@ -149,9 +155,9 @@ func WithPrngValues(withPrngValues []string) Option {
 	}
 }
 
-// WithGormFormatter specifies an optional hclog to use for gorm's log
-// formmater
-func WithGormFormatter(l hclog.Logger) Option {
+// WithLogger specifies an optional hclog to use for db operations.  It's only
+// valid for Open(..) and OpenWith(...)
+func WithLogger(l hclog.Logger) Option {
 	return func(o *Options) {
 		o.withGormFormatter = l
 	}
@@ -191,6 +197,7 @@ func WithOnConflict(onConflict *OnConflict) Option {
 }
 
 // WithReturnRowsAffected specifies an option for returning the rows affected
+// and typically used with "bulk" write operations.
 func WithReturnRowsAffected(rowsAffected *int64) Option {
 	return func(o *Options) {
 		o.withRowsAffected = rowsAffected

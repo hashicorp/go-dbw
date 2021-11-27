@@ -36,7 +36,7 @@ func NonUpdatableFields() []string {
 	return fields
 }
 
-// Update an object in the db, fieldMask is required and provides
+// Update a resource in the db, a fieldMask is required and provides
 // field_mask.proto paths for fields that should be updated. The i interface
 // parameter is the type the caller wants to update in the db and its fields are
 // set to the update values. setToNullPaths is optional and provides

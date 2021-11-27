@@ -5,8 +5,7 @@
 // source: dbtest/storage/v1/dbtest.proto
 
 // define a test proto package for the internal/db package.  These protos
-// are only used for unit tests and are not part of the rest of the boundary
-// domain model
+// are only used for unit tests and are not part of the rest of the domain model
 
 package dbtest
 

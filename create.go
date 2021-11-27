@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// OpType defines a set of database operation types
 type OpType int
 
 const (
@@ -30,7 +31,7 @@ type VetForWriter interface {
 var nonCreateFields atomic.Value
 
 // InitNonCreatableFields sets the fields which are not setable using
-// via RW.Update(...)
+// via RW.Create(...)
 func InitNonCreatableFields(fields []string) {
 	m := make(map[string]struct{}, len(fields))
 	for _, f := range fields {
@@ -53,18 +54,19 @@ func NonCreatableFields() []string {
 	return fields
 }
 
-// Create an object in the db with options: WithDebug, WithLookup,
+// Create a resource in the db with options: WithDebug, WithLookup,
 // WithReturnRowsAffected, OnConflict, WithBeforeWrite, WithAfterWrite,
 // WithVersion, and WithWhere.
 //
 // OnConflict specifies alternative actions to take when an insert results in a
-// unique constraint or exclusion constraint error. If WithVersion is used, then
-// the update for on conflict will include the version number, which basically
-// makes the update use optimistic locking and the update will only succeed if
-// the existing rows version matches the WithVersion option.  Zero is not a
-// valid value for the WithVersion option and will return an error. WithWhere
-// allows specifying an additional constraint on the on conflict operation in
-// addition to the on conflict target policy (columns or constraint).
+// unique constraint or exclusion constraint error. If WithVersion is used with
+// OnConflict, then the update for on conflict will include the version number,
+// which basically makes the update use optimistic locking and the update will
+// only succeed if the existing rows version matches the WithVersion option.
+// Zero is not a valid value for the WithVersion option and will return an
+// error. WithWhere allows specifying an additional constraint on the on
+// conflict operation in addition to the on conflict target policy (columns or
+// constraint).
 func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	const op = "dbw.Create"
 	if rw.underlying == nil {

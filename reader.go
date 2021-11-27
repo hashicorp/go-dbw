@@ -36,13 +36,13 @@ type Reader interface {
 	ScanRows(rows *sql.Rows, result interface{}) error
 }
 
-// ResourcePublicIder defines an interface that LookupByPublicId() can use to
-// get the resource's public id.
+// ResourcePublicIder defines an interface that LookupByPublicId() and
+// LookupBy() can use to get the resource's public id.
 type ResourcePublicIder interface {
 	GetPublicId() string
 }
 
-// ResourcePrivateIder defines an interface that LookupById() can use to get the
+// ResourcePrivateIder defines an interface that LookupBy() can use to get the
 // resource's private id.
 type ResourcePrivateIder interface {
 	GetPrivateId() string

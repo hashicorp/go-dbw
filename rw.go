@@ -16,7 +16,8 @@ const (
 	DefaultLimit = 10000
 )
 
-// RW uses a DB connection for read/write
+// RW uses a DB as a connection for it's read/write operations.  This is
+// basically the primary type for the package's operations.
 type RW struct {
 	underlying *DB
 }
@@ -27,6 +28,8 @@ var (
 	_ Writer = (*RW)(nil)
 )
 
+// New creates a new RW using an open DB. Note: there can by many RWs that share
+// the same DB, since the DB manages the connection pool.
 func New(underlying *DB) *RW {
 	return &RW{underlying: underlying}
 }

@@ -8,8 +8,8 @@ import (
 
 // DoTx will wrap the Handler func passed within a transaction with retries
 // you should ensure that any objects written to the db in your TxHandler are retryable, which
-// means that the object may be sent to the db several times (retried), so things like the primary key must
-// be reset before retry
+// means that the object may be sent to the db several times (retried), so
+// things like the primary key may need to be reset before retry.
 func (w *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error) {
 	const op = "dbw.DoTx"
 	if w.underlying == nil {

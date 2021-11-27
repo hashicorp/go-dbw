@@ -169,7 +169,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 	ctx := context.Background()
 	conn, _ := dbw.TestSetup(t)
 	rw := dbw.New(conn)
-	dbType, err := conn.DbType()
+	dbType, _, err := conn.DbType()
 	require.NoError(t, err)
 
 	createInitialUser := func() *dbtest.TestUser {

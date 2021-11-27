@@ -21,39 +21,33 @@ type Writer interface {
 	// is responsible for the transaction life cycle of the writer and if an
 	// error is returned the caller must decide what to do with the transaction,
 	// which almost always should be to rollback.  Update returns the number of
-	// rows updated or an error. Supported options: WithOplog.
+	// rows updated or an error.
 	Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error)
 
-	// Create an object in the db with options: WithDebug, WithOplog, NewOplogMsg,
-	// WithLookup, WithReturnRowsAffected, OnConflict, WithVersion, and
-	// WithWhere. The caller is responsible for the transaction life cycle of
-	// the writer and if an error is returned the caller must decide what to do
-	// with the transaction, which almost always should be to rollback.
-	Create(ctx context.Context, i interface{}, opt ...Option) error
-
-	// CreateItems will create multiple items of the same type.
-	// Supported options: WithDebug, WithOplog, WithOplogMsgs,
-	// WithReturnRowsAffected, OnConflict, WithVersion, and WithWhere.
-	/// WithOplog and WithOplogMsgs may not be used together. WithLookup is not
-	// a supported option. The caller is responsible for the transaction life
-	// cycle of the writer and if an error is returned the caller must decide
-	// what to do with the transaction, which almost always should be to
-	// rollback.
-	CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error
-
-	// Delete an object in the db with options: WithOplog, WithDebug.
-	// The caller is responsible for the transaction life cycle of the writer
-	// and if an error is returned the caller must decide what to do with
-	// the transaction, which almost always should be to rollback. Delete
-	// returns the number of rows deleted or an error.
-	Delete(ctx context.Context, i interface{}, opt ...Option) (int, error)
-
-	// DeleteItems will delete multiple items of the same type.
-	// Supported options: WithOplog and WithOplogMsgs. WithOplog and
-	// WithOplogMsgs may not be used together. The caller is responsible for the
+	// Create a resource in the database. The caller is responsible for the
 	// transaction life cycle of the writer and if an error is returned the
 	// caller must decide what to do with the transaction, which almost always
-	// should be to rollback. Delete returns the number of rows deleted or an error.
+	// should be to rollback.
+	Create(ctx context.Context, i interface{}, opt ...Option) error
+
+	// CreateItems will create multiple items of the same type. The caller is
+	// responsible for the transaction life cycle of the writer and if an error
+	// is returned the caller must decide what to do with the transaction, which
+	// almost always should be to rollback.
+	CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error
+
+	// Delete a resource in the database. The caller is responsible for the
+	// transaction life cycle of the writer and if an error is returned the
+	// caller must decide what to do with the transaction, which almost always
+	// should be to rollback. Delete returns the number of rows deleted or an
+	// error.
+	Delete(ctx context.Context, i interface{}, opt ...Option) (int, error)
+
+	// DeleteItems will delete multiple items of the same type. The caller is
+	// responsible for the transaction life cycle of the writer and if an error
+	// is returned the caller must decide what to do with the transaction, which
+	// almost always should be to rollback. Delete returns the number of rows
+	// deleted or an error.
 	DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error)
 
 	// Exec will execute the sql with the values as parameters. The int returned
@@ -61,8 +55,7 @@ type Writer interface {
 	// supported.
 	Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error)
 
-	// Query will run the raw query and return the *sql.Rows results. Query will
-	// operate within the context of any ongoing transaction for the db.Writer.  The
+	// Query will run the raw query and return the *sql.Rows results.  The
 	// caller must close the returned *sql.Rows. Query can/should be used in
 	// combination with ScanRows.  Query is included in the Writer interface
 	// so callers can execute updates and inserts with returning values.

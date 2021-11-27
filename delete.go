@@ -6,9 +6,10 @@ import (
 	"reflect"
 )
 
-// Delete an object in the db with options: WithWhere, WithDebug. WithWhere allows
-// specifying an additional constraint on the operation in addition to the PKs.
-// Delete returns the number of rows deleted and any errors.
+// Delete a resource in the db with options: WithWhere, WithDebug and
+// WithVersion. WithWhere and WithVersion allows specifying a additional
+// constraints on the operation in addition to the PKs. Delete returns the
+// number of rows deleted and any errors.
 func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
 	const op = "dbw.Delete"
 	if rw.underlying == nil {

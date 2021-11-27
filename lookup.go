@@ -36,8 +36,8 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...O
 
 // LookupByPublicId will lookup resource by its public_id, which must be unique.
 // Options are ignored.
-func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error {
-	return rw.LookupBy(ctx, resource, opt...)
+func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, _ ...Option) error {
+	return rw.LookupBy(ctx, resource)
 }
 
 func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {

@@ -14,9 +14,10 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-// setup the tests (initialize the database one-time). Do not close the returned
-// db.  Supported test options: WithDebug, WithTestDialect, WithTestDatabaseUrl,
-// and WithMigration
+// TestSetup is typically called before starting a test and will setup the
+// database for the test (initialize the database one-time). Do not close the
+// returned db.  Supported test options: WithDebug, WithTestDialect,
+// WithTestDatabaseUrl, and WithMigration
 func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	require := require.New(t)
 	var url string
@@ -150,7 +151,7 @@ func WithTestDatabaseUrl(url string) TestOption {
 	}
 }
 
-// TestCreateTables will create the test tables for the db pkg
+// TestCreateTables will create the test tables for the dbw pkg
 func TestCreateTables(t *testing.T, conn *DB) {
 	t.Helper()
 	require := require.New(t)

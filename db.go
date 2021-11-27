@@ -16,6 +16,9 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DbType defines a database type.  It's not an exhaustive list of database
+// types which can be used by the dbw package, since you can always use
+// OpenWith(...) to connect to KnownDB types.
 type DbType int
 
 const (
@@ -24,6 +27,7 @@ const (
 	Sqlite    DbType = 2
 )
 
+// String provides a string rep of the DbType.
 func (db DbType) String() string {
 	return [...]string{
 		"unknown",
@@ -32,6 +36,8 @@ func (db DbType) String() string {
 	}[db]
 }
 
+// StringToDbType provides a string to type conversion.  If the type is known,
+// then UnknownDB with and error is returned.
 func StringToDbType(dialect string) (DbType, error) {
 	switch dialect {
 	case "postgres":
@@ -43,20 +49,24 @@ func StringToDbType(dialect string) (DbType, error) {
 	}
 }
 
-// DB is a wrapper around the ORM
+// DB is a wrapper around whatever is providing the interface for database
+// operations (typically an ORM).  DB uses database/sql to maintain connection
+// pool.
 type DB struct {
 	wrapped *gorm.DB
 }
 
-// DbType will return the DbType of the connection
-func (db *DB) DbType() (DbType, error) {
-	return StringToDbType(db.wrapped.Dialector.Name())
+// DbType will return the DbType and raw name of the connection type
+func (db *DB) DbType() (typ DbType, rawName string, e error) {
+	rawName = db.wrapped.Dialector.Name()
+	typ, _ = StringToDbType(rawName)
+	return typ, rawName, nil
 }
 
 // Debug will enable/disable debug info for the connection
 func (db *DB) Debug(on bool) {
 	if on {
-		// info level in the Gorm domain which maps to a debug level in the boundary domain
+		// info level in the Gorm domain which maps to a debug level in this domain
 		db.wrapped.Logger = logger.Default.LogMode(logger.Info)
 	} else {
 		// the default level in the gorm domain is: error level
@@ -64,11 +74,15 @@ func (db *DB) Debug(on bool) {
 	}
 }
 
-// SqlDB returns the underlying sql.DB
+// SqlDB returns the underlying sql.DB  Note: this makes it possible to do
+// things like set database/sql connection options like SetMaxIdleConns. If
+// you're simply setting max/min connections then you should use the
+// WithMinOpenConnections and WithMaxOpenConnections options when
+// "opening" the database.
 //
-// Note: This func is not named DB(), because our choice of ORM (gorm) which is
-// embedded for various reasons, already exports a DB() func and it's base type
-// is also an export DB type
+// Care should be take when deciding to use this for basic database operations
+// like Exec, Query, etc since these functions are already provided by dbw.RW
+// which provides a layer of encapsulation of the underlying database.
 func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
 	const op = "dbw.(DB).SqlDB"
 	if d.wrapped == nil {
@@ -77,7 +91,11 @@ func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
 	return d.wrapped.DB()
 }
 
-// Close the underlying sql.DB
+// Close the database
+//
+// Note: Consider if you need to call Close() on the returned DB. Typically the
+// answer is no, but there are occasions when it's necessary. See the sql.DB
+// docs for more information.
 func (d *DB) Close(ctx context.Context) error {
 	const op = "dbw.(DB).Close"
 	if d.wrapped == nil {
@@ -91,7 +109,7 @@ func (d *DB) Close(ctx context.Context) error {
 }
 
 // Open a database connection which is long-lived. The options of
-// WithGormFormatter and WithMaxOpenConnections are supported.
+// WithLogger and WithMaxOpenConnections are supported.
 //
 // Note: Consider if you need to call Close() on the returned DB.  Typically the
 // answer is no, but there are occasions when it's necessary.  See the sql.DB
@@ -117,7 +135,8 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 	return openDialector(dialect, opt...)
 }
 
-// Dialector provides a set of functions the database dialect must satisfy.
+// Dialector provides a set of functions the database dialect must satisfy to
+// be used with OpenWith(...)
 // It's a simple wrapper of the gorm.Dialector and provides the ability to open
 // any support gorm dialect driver.
 type Dialector interface {
@@ -125,7 +144,7 @@ type Dialector interface {
 }
 
 // OpenWith will open a database connection using a Dialector which is
-// long-lived. The options of WithGormFormatter and WithMaxOpenConnections are
+// long-lived. The options of WithLogger and WithMaxOpenConnections are
 // supported.
 //
 // Note: Consider if you need to call Close() on the returned DB.  Typically the
@@ -141,9 +160,9 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		return nil, fmt.Errorf("unable to open database: %w", err)
 	}
 	opts := GetOpts(opt...)
-	if opts.withGormFormatter != nil {
+	if opts.withLogger != nil {
 		newLogger := logger.New(
-			getGormLogger(opts.withGormFormatter),
+			getGormLogger(opts.withLogger),
 			logger.Config{
 				LogLevel: logger.Error, // Log level
 				Colorful: false,        // Disable color

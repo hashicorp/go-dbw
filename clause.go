@@ -7,7 +7,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// ColumnValue defines a column and it's assigned value for a database operation
+// ColumnValue defines a column and it's assigned value for a database
+// operation.  See: SetColumnValues(...)
 type ColumnValue struct {
 	column string
 	value  interface{}
@@ -59,7 +60,8 @@ func Expr(expr string, args ...interface{}) ExprValue {
 	return ExprValue{sql: expr, vars: args}
 }
 
-// SetColumnValues defines a map from column names to values
+// SetColumnValues defines a map from column names to values for database
+// operations.
 func SetColumnValues(columnValues map[string]interface{}) []ColumnValue {
 	keys := make([]string, 0, len(columnValues))
 	for key := range columnValues {

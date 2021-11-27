@@ -9,6 +9,8 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
+// NewId creates a new random base62 ID with the provided prefix with an
+// underscore delimiter
 func NewId(prefix string, opt ...Option) (string, error) {
 	const op = "dbw.newId"
 	if prefix == "" {
