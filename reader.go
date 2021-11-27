@@ -7,12 +7,12 @@ import (
 
 // Reader interface defines lookups/searching for resources
 type Reader interface {
-	// LookupById will lookup a resource by its primary key id, which must be
+	// LookupBy will lookup a resource by it's primary keys, which must be
 	// unique. If the resource implements either ResourcePublicIder or
 	// ResourcePrivateIder interface, then they are used as the resource's
 	// primary key for lookup.  Otherwise, the resource tags are used to
 	// determine it's primary key(s) for lookup.
-	LookupById(ctx context.Context, resource interface{}, opt ...Option) error
+	LookupBy(ctx context.Context, resource interface{}, opt ...Option) error
 
 	// LookupByPublicId will lookup resource by its public_id which must be unique.
 	LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error

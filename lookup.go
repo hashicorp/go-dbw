@@ -8,9 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
-// LookupByPublicId will lookup resource by its public_id or private_id, which
-// must be unique. Options are ignored.
-func (rw *RW) LookupById(ctx context.Context, resourceWithIder interface{}, _ ...Option) error {
+// LookupBy will lookup a resource by it's primary keys, which must be
+// unique. If the resource implements either ResourcePublicIder or
+// ResourcePrivateIder interface, then they are used as the resource's
+// primary key for lookup.  Otherwise, the resource tags are used to
+// determine it's primary key(s) for lookup.  Options are ignored.
+func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...Option) error {
 	const op = "dbw.LookupById"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -34,7 +37,7 @@ func (rw *RW) LookupById(ctx context.Context, resourceWithIder interface{}, _ ..
 // LookupByPublicId will lookup resource by its public_id, which must be unique.
 // Options are ignored.
 func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error {
-	return rw.LookupById(ctx, resource, opt...)
+	return rw.LookupBy(ctx, resource, opt...)
 }
 
 func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {
@@ -45,7 +48,7 @@ func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option
 	if !withLookup {
 		return nil
 	}
-	if err := rw.LookupById(ctx, i, opt...); err != nil {
+	if err := rw.LookupBy(ctx, i, opt...); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

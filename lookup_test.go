@@ -120,7 +120,7 @@ func TestDb_LookupById(t *testing.T) {
 			cloner, ok := tt.args.resource.(dbtest.Cloner)
 			require.True(ok)
 			cp := cloner.Clone()
-			err := tt.rw.LookupById(context.Background(), cp, tt.args.opt...)
+			err := tt.rw.LookupBy(context.Background(), cp, tt.args.opt...)
 			if tt.wantErr {
 				require.Error(err)
 				assert.ErrorIs(err, tt.wantIsErr)
@@ -133,7 +133,7 @@ func TestDb_LookupById(t *testing.T) {
 	t.Run("not-ptr", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		u := testUser(t, testRw, "", "", "")
-		err := testRw.LookupById(context.Background(), *u)
+		err := testRw.LookupBy(context.Background(), *u)
 		require.Error(err)
 		assert.ErrorIs(err, dbw.ErrInvalidParameter)
 	})
