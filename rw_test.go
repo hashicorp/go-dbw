@@ -118,3 +118,56 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.Error(err)
 	})
 }
+
+func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {
+	t.Helper()
+	require := require.New(t)
+	r, err := dbtest.NewTestUser()
+	require.NoError(err)
+	r.Name = name
+	r.Email = email
+	r.PhoneNumber = phoneNumber
+	if rw != nil {
+		err = rw.Create(context.Background(), r)
+		require.NoError(err)
+	}
+	return r
+}
+
+func testCar(t *testing.T, rw *dbw.RW) *dbtest.TestCar {
+	t.Helper()
+	require := require.New(t)
+	r, err := dbtest.NewTestCar()
+	require.NoError(err)
+	if rw != nil {
+		err = rw.Create(context.Background(), r)
+		require.NoError(err)
+	}
+	return r
+}
+
+func testScooter(t *testing.T, rw *dbw.RW, model string, mpg int32) *dbtest.TestScooter {
+	t.Helper()
+	require := require.New(t)
+	r, err := dbtest.NewTestScooter()
+	require.NoError(err)
+	r.Model = model
+	r.Mpg = mpg
+	if rw != nil {
+		err = rw.Create(context.Background(), r)
+		require.NoError(err)
+	}
+	return r
+}
+
+func testRental(t *testing.T, rw *dbw.RW, userId, carId string) *dbtest.TestRental {
+	t.Helper()
+	require := require.New(t)
+	r, err := dbtest.NewTestRental(userId, carId)
+	require.NoError(err)
+	if rw != nil {
+		err = rw.Create(context.Background(), r)
+		require.NoError(err)
+	}
+	return r
+}

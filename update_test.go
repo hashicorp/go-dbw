@@ -544,30 +544,3 @@ func TestDb_Update(t *testing.T) {
 		assert.Equal("dbw.Update: primary key is not set for: [UserId]: invalid parameter", err.Error())
 	})
 }
-
-func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {
-	t.Helper()
-	require := require.New(t)
-	r, err := dbtest.NewTestUser()
-	require.NoError(err)
-	r.Name = name
-	r.Email = email
-	r.PhoneNumber = phoneNumber
-	if rw != nil {
-		err = rw.Create(context.Background(), r)
-		require.NoError(err)
-	}
-	return r
-}
-
-func testCar(t *testing.T, rw *dbw.RW) *dbtest.TestCar {
-	t.Helper()
-	require := require.New(t)
-	r, err := dbtest.NewTestCar()
-	require.NoError(err)
-	if rw != nil {
-		err = rw.Create(context.Background(), r)
-		require.NoError(err)
-	}
-	return r
-}
