@@ -88,7 +88,6 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	}
 
 	db := rw.underlying.wrapped.WithContext(ctx)
-	var onConflictDoNothing bool
 	if opts.withOnConflict != nil {
 		c := clause.OnConflict{}
 		switch opts.withOnConflict.Target.(type) {
@@ -107,7 +106,6 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 		switch opts.withOnConflict.Action.(type) {
 		case DoNothing:
 			c.DoNothing = true
-			onConflictDoNothing = true
 		case UpdateAll:
 			c.UpdateAll = true
 		case []ColumnValue:
@@ -157,13 +155,9 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	if opts.withRowsAffected != nil {
 		*opts.withRowsAffected = tx.RowsAffected
 	}
-	if opts.withAfterWrite != nil {
-		switch {
-		case onConflictDoNothing && tx.RowsAffected == 0:
-		default:
-			if err := opts.withAfterWrite(i, int(tx.RowsAffected)); err != nil {
-				return fmt.Errorf("%s: error after write: %w", op, err)
-			}
+	if tx.RowsAffected > 0 && opts.withAfterWrite != nil {
+		if err := opts.withAfterWrite(i, int(tx.RowsAffected)); err != nil {
+			return fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}
 	if err := rw.lookupAfterWrite(ctx, i, opt...); err != nil {
