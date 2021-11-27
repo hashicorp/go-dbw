@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/callbacks"
 )
 
 const (
@@ -90,6 +91,41 @@ func contains(ss []string, t string) bool {
 	return false
 }
 
+func raiseErrorOnHooks(i interface{}) error {
+	const op = "dbw.raiseErrorOnHooks"
+	v := i
+	valOf := reflect.ValueOf(i)
+	if valOf.Kind() == reflect.Slice {
+		if valOf.Len() == 0 {
+			return nil
+		}
+		v = valOf.Index(0).Interface()
+	}
+
+	switch v.(type) {
+	case
+		// create hooks
+		callbacks.BeforeCreateInterface,
+		callbacks.AfterCreateInterface,
+		callbacks.BeforeSaveInterface,
+		callbacks.AfterSaveInterface,
+
+		// update hooks
+		callbacks.BeforeUpdateInterface,
+		callbacks.AfterUpdateInterface,
+
+		// delete hooks
+		callbacks.BeforeDeleteInterface,
+		callbacks.AfterDeleteInterface,
+
+		// find hooks
+		callbacks.AfterFindInterface:
+
+		return fmt.Errorf("%s: gorm callback/hooks are not supported: %w", op, ErrInvalidParameter)
+	}
+	return nil
+}
+
 func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Options) (string, []interface{}, error) {
 	const op = "dbw.whereClausesFromOpts"
 	var where []string
@@ -168,6 +204,9 @@ func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where strin
 	if reflect.ValueOf(resource).Kind() != reflect.Ptr {
 		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
 	}
+	if err := raiseErrorOnHooks(resource); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	if err := rw.underlying.wrapped.Where(where, args...).First(resource).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
@@ -192,6 +231,9 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	}
 	if where == "" && len(args) > 0 {
 		return fmt.Errorf("%s: args provided with empty where: %w", op, ErrInvalidParameter)
+	}
+	if err := raiseErrorOnHooks(resources); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	if reflect.ValueOf(resources).Kind() != reflect.Ptr {
 		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)

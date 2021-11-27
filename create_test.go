@@ -630,13 +630,15 @@ func TestDb_CreateItems(t *testing.T) {
 	}
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
-			name     string
-			resource interface{}
+			name        string
+			resource    interface{}
+			errContains string
 		}{
-			{"before-create", &dbtest.TestWithBeforeCreate{}},
-			{"after-create", &dbtest.TestWithAfterCreate{}},
-			{"before-save", &dbtest.TestWithBeforeSave{}},
-			{"before-save", &dbtest.TestWithAfterSave{}},
+			{"before-create", &dbtest.TestWithBeforeCreate{}, "gorm callback/hooks are not supported"},
+			{"after-create", &dbtest.TestWithAfterCreate{}, "gorm callback/hooks are not supported"},
+			{"before-save", &dbtest.TestWithBeforeSave{}, "gorm callback/hooks are not supported"},
+			{"before-save", &dbtest.TestWithAfterSave{}, "gorm callback/hooks are not supported"},
+			{"nil", nil, "missing interface"},
 		}
 		for _, tt := range hookTests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -645,7 +647,7 @@ func TestDb_CreateItems(t *testing.T) {
 				err := w.CreateItems(context.Background(), []interface{}{tt.resource})
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrInvalidParameter)
-				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+				assert.Contains(err.Error(), tt.errContains)
 			})
 		}
 	})

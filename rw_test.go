@@ -119,6 +119,24 @@ func TestDb_LookupWhere(t *testing.T) {
 		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", id)
 		require.Error(err)
 	})
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"after", &dbtest.TestWithAfterFind{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(conn)
+				err := w.LookupWhere(context.Background(), tt.resource, "public_id = ?", "1")
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+			})
+		}
+	})
 }
 
 func TestDb_SearchWhere(t *testing.T) {
@@ -271,6 +289,24 @@ func TestDb_SearchWhere(t *testing.T) {
 			}
 		})
 	}
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"after", &dbtest.TestWithAfterFind{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(conn)
+				err := w.SearchWhere(context.Background(), tt.resource, "public_id = 1", nil)
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+			})
+		}
+	})
 }
 
 func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {

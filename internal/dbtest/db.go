@@ -236,3 +236,21 @@ type TestWithAfterUpdate struct{}
 func (t *TestWithAfterUpdate) AfterUpdate(_ *gorm.DB) error {
 	return nil
 }
+
+type TestWithBeforeDelete struct{}
+
+func (t *TestWithBeforeDelete) BeforeDelete(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithAfterDelete struct{}
+
+func (t *TestWithAfterDelete) AfterDelete(_ *gorm.DB) error {
+	return nil
+}
+
+type TestWithAfterFind struct{}
+
+func (t *TestWithAfterFind) AfterFind(_ *gorm.DB) error {
+	return nil
+}

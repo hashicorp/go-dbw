@@ -212,8 +212,8 @@ func TestDb_Delete(t *testing.T) {
 				name     string
 				resource interface{}
 			}{
-				{"before-update", &dbtest.TestWithBeforeDelete{}},
-				{"after-update", &dbtest.TestWithAfterDelete{}},
+				{"before", &dbtest.TestWithBeforeDelete{}},
+				{"after", &dbtest.TestWithAfterDelete{}},
 			}
 			for _, tt := range hookTests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -400,8 +400,8 @@ func TestDb_DeleteItems(t *testing.T) {
 			name     string
 			resource interface{}
 		}{
-			{"before-update", &dbtest.TestWithBeforeDelete{}},
-			{"after-update", &dbtest.TestWithAfterDelete{}},
+			{"before", &dbtest.TestWithBeforeDelete{}},
+			{"after", &dbtest.TestWithAfterDelete{}},
 		}
 		for _, tt := range hookTests {
 			t.Run(tt.name, func(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestDb_LookupById(t *testing.T) {
+func TestDb_LookupBy(t *testing.T) {
 	t.Parallel()
 	db, _ := dbw.TestSetup(t)
 	testRw := dbw.New(db)
@@ -136,5 +136,23 @@ func TestDb_LookupById(t *testing.T) {
 		err := testRw.LookupBy(context.Background(), *u)
 		require.Error(err)
 		assert.ErrorIs(err, dbw.ErrInvalidParameter)
+	})
+	t.Run("hooks", func(t *testing.T) {
+		hookTests := []struct {
+			name     string
+			resource interface{}
+		}{
+			{"after", &dbtest.TestWithAfterFind{}},
+		}
+		for _, tt := range hookTests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert, require := assert.New(t), require.New(t)
+				w := dbw.New(db)
+				err := w.LookupBy(context.Background(), tt.resource)
+				require.Error(err)
+				assert.ErrorIs(err, dbw.ErrInvalidParameter)
+				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
+			})
+		}
 	})
 }

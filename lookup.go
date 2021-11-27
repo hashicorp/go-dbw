@@ -18,6 +18,9 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...O
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
+	if err := raiseErrorOnHooks(resourceWithIder); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	if reflect.ValueOf(resourceWithIder).Kind() != reflect.Ptr {
 		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
 	}
@@ -44,7 +47,9 @@ func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option
 	const op = "dbw.lookupAfterWrite"
 	opts := GetOpts(opt...)
 	withLookup := opts.withLookup
-
+	if err := raiseErrorOnHooks(i); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
 	if !withLookup {
 		return nil
 	}
