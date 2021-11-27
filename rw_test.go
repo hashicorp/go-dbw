@@ -3,6 +3,8 @@ package dbw_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/go-dbw"
@@ -117,6 +119,158 @@ func TestDb_LookupWhere(t *testing.T) {
 		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", id)
 		require.Error(err)
 	})
+}
+
+func TestDb_SearchWhere(t *testing.T) {
+	t.Parallel()
+	conn, _ := dbw.TestSetup(t)
+	testRw := dbw.New(conn)
+	knownUser := testUser(t, testRw, "zedUser", "", "")
+
+	type args struct {
+		where string
+		arg   []interface{}
+		opt   []dbw.Option
+	}
+	tests := []struct {
+		name          string
+		rw            *dbw.RW
+		createCnt     int
+		args          args
+		wantCnt       int
+		wantErr       bool
+		wantNameOrder bool
+	}{
+		{
+			name:      "no-limit",
+			rw:        testRw,
+			createCnt: 10,
+			args: args{
+				where: "1=1",
+				opt:   []dbw.Option{dbw.WithLimit(-1), dbw.WithOrder("name asc")},
+			},
+			wantCnt:       11, // there's an additional knownUser
+			wantErr:       false,
+			wantNameOrder: true,
+		},
+		{
+			name:      "no-where",
+			rw:        testRw,
+			createCnt: 10,
+			args: args{
+				opt: []dbw.Option{dbw.WithLimit(10)},
+			},
+			wantCnt: 10,
+			wantErr: false,
+		},
+		{
+			name:      "custom-limit",
+			rw:        testRw,
+			createCnt: 10,
+			args: args{
+				where: "1=1",
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 3,
+			wantErr: false,
+		},
+		{
+			name:      "simple",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: "public_id = ?",
+				arg:   []interface{}{knownUser.PublicId},
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 1,
+			wantErr: false,
+		},
+		{
+			name:      "no args",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: fmt.Sprintf("public_id = '%v'", knownUser.PublicId),
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 1,
+			wantErr: false,
+		},
+		{
+			name:      "no where, but with args",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				arg: []interface{}{knownUser.PublicId},
+				opt: []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantErr: true,
+		},
+		{
+			name:      "not-found",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: "public_id = ?",
+				arg:   []interface{}{"bad-id"},
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 0,
+			wantErr: false,
+		},
+		{
+			name:      "bad-where",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: "bad_column_name = ?",
+				arg:   []interface{}{knownUser.PublicId},
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 0,
+			wantErr: true,
+		},
+		{
+			name:      "nil-underlying",
+			rw:        &dbw.RW{},
+			createCnt: 1,
+			args: args{
+				where: "public_id = ?",
+				arg:   []interface{}{knownUser.PublicId},
+				opt:   []dbw.Option{dbw.WithLimit(3)},
+			},
+			wantCnt: 0,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert, require := assert.New(t), require.New(t)
+			testUsers := []*dbtest.TestUser{}
+			for i := 0; i < tt.createCnt; i++ {
+				testUsers = append(testUsers, testUser(t, testRw, tt.name+strconv.Itoa(i), "", ""))
+			}
+			assert.Equal(tt.createCnt, len(testUsers))
+
+			var foundUsers []dbtest.TestUser
+			err := tt.rw.SearchWhere(context.Background(), &foundUsers, tt.args.where, tt.args.arg, tt.args.opt...)
+			if tt.wantErr {
+				require.Error(err)
+				return
+			}
+			require.NoError(err)
+			assert.Equal(tt.wantCnt, len(foundUsers))
+			if tt.wantNameOrder {
+				assert.Equal(tt.name+strconv.Itoa(0), foundUsers[0].Name)
+				for i, u := range foundUsers {
+					if u.Name != "zedUser" {
+						assert.Equal(tt.name+strconv.Itoa(i), u.Name)
+					}
+				}
+			}
+		})
+	}
 }
 
 func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {

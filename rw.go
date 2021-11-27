@@ -155,10 +155,6 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 	return strings.Join(clauses, " and "), fieldValues, nil
 }
 
-func (_ *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
-	panic("todo")
-}
-
 func (_ *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
 	panic("todo")
 }
@@ -180,6 +176,55 @@ func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where strin
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
 		}
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	return nil
+}
+
+// SearchWhere will search for all the resources it can find using a where
+// clause with parameters. An error will be returned if args are provided without a
+// where clause.
+//
+// Supports the WithLimit option.  If WithLimit < 0, then unlimited results are returned.
+// If WithLimit == 0, then default limits are used for results.
+// Supports the WithOrder and WithDebug options.
+func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
+	const op = "dbw.SearchWhere"
+	opts := GetOpts(opt...)
+	if rw.underlying == nil {
+		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+	}
+	if where == "" && len(args) > 0 {
+		return fmt.Errorf("%s: args provided with empty where: %w", op, ErrInvalidParameter)
+	}
+	if reflect.ValueOf(resources).Kind() != reflect.Ptr {
+		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	}
+	var err error
+	db := rw.underlying.wrapped.WithContext(ctx)
+	if opts.withOrder != "" {
+		db = db.Order(opts.withOrder)
+	}
+	if opts.withDebug {
+		db = db.Debug()
+	}
+	// Perform limiting
+	switch {
+	case opts.WithLimit < 0: // any negative number signals unlimited results
+	case opts.WithLimit == 0: // zero signals the default value and default limits
+		db = db.Limit(DefaultLimit)
+	default:
+		db = db.Limit(opts.WithLimit)
+	}
+
+	if where != "" {
+		db = db.Where(where, args...)
+	}
+
+	// Perform the query
+	err = db.Find(resources).Error
+	if err != nil {
+		// searching with a slice parameter does not return a gorm.ErrRecordNotFound
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
