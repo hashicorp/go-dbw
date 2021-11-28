@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/xo/dburl"
 
 	"github.com/stretchr/testify/assert"
@@ -85,7 +86,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	dbType, err := StringToDbType(opts.withDialect)
 	require.NoError(err)
 
-	db, err := Open(dbType, url)
+	db, err := Open(dbType, url, WithLogger(hclog.Default()))
 	require.NoError(err)
 
 	db.wrapped.Logger.LogMode(logger.Error)

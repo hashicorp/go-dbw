@@ -127,7 +127,7 @@ func Test_getOpts(t *testing.T) {
 		assert.Equal(opts, testOpts)
 
 		testLogger := hclog.New(&hclog.LoggerOptions{})
-		opts = GetOpts(WithGormFormatter(testLogger))
+		opts = GetOpts(WithLogger(testLogger))
 		testOpts.withGormFormatter = testLogger
 		assert.Equal(opts, testOpts)
 	})

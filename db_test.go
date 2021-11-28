@@ -2,6 +2,7 @@ package dbw_test
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"testing"
 
@@ -34,7 +35,7 @@ func TestOpen(t *testing.T) {
 				opts: []dbw.Option{
 					dbw.WithMinOpenConnections(1),
 					dbw.WithMaxOpenConnections(2),
-					dbw.WithGormFormatter(hclog.New(hclog.DefaultOptions)),
+					dbw.WithLogger(hclog.New(hclog.DefaultOptions)),
 				},
 			},
 			wantErr: false,
@@ -55,7 +56,7 @@ func TestOpen(t *testing.T) {
 				opts: []dbw.Option{
 					dbw.WithMinOpenConnections(3),
 					dbw.WithMaxOpenConnections(2),
-					dbw.WithGormFormatter(hclog.New(hclog.DefaultOptions)),
+					dbw.WithLogger(hclog.New(hclog.DefaultOptions)),
 				},
 			},
 			wantErr: true,
@@ -73,6 +74,11 @@ func TestOpen(t *testing.T) {
 			args: args{
 				dbType:        dbw.Sqlite,
 				connectionUrl: "file::memory:?cache=invalid-parameter",
+				opts: []dbw.Option{dbw.WithLogger(hclog.New(
+					&hclog.LoggerOptions{
+						Output: ioutil.Discard,
+					},
+				))},
 			},
 			wantErr: true,
 		},
