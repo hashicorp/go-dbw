@@ -40,8 +40,12 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 		}
 	}
 	db := rw.underlying.wrapped
-	if opts.withWhereClause != "" {
-		db = db.Where(opts.withWhereClause, opts.withWhereClauseArgs...)
+	if opts.WithVersion != nil || opts.withWhereClause != "" {
+		where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
+		if err != nil {
+			return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+		}
+		db = db.Where(where, args...)
 	}
 	if opts.withDebug {
 		db = db.Debug()

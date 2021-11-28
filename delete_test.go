@@ -42,6 +42,7 @@ func TestDb_Delete(t *testing.T) {
 		return errFailedFn
 	}
 
+	versionOne := uint32(1)
 	// seed some test users, so we won't just happen to get a false positive
 	// with only 1 entry in the db
 	for i := 0; i < 1000; i++ {
@@ -144,6 +145,16 @@ func TestDb_Delete(t *testing.T) {
 			args: args{
 				i:   newUser(),
 				opt: []dbw.Option{dbw.WithWhere("1 = ?", 1)},
+			},
+			want:    1,
+			wantErr: false,
+		},
+		{
+			name: "with-version",
+			rw:   testRw,
+			args: args{
+				i:   newUser(),
+				opt: []dbw.Option{dbw.WithVersion(&versionOne)},
 			},
 			want:    1,
 			wantErr: false,
