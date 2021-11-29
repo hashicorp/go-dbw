@@ -170,7 +170,7 @@ func TestDb_Update(t *testing.T) {
 				},
 				fieldMaskPaths: []string{"Name", "PhoneNumber"},
 				setToNullPaths: []string{"Email"},
-				opt:            []dbw.Option{dbw.WithWhere("name = @name", sql.Named("name", "not-matching")), dbw.WithDebug(true)},
+				opt:            []dbw.Option{dbw.WithWhere("name = @name", sql.Named("name", "not-matching"))},
 			},
 			want:    0,
 			wantErr: false,
@@ -511,7 +511,7 @@ func TestDb_Update(t *testing.T) {
 		require.NoError(err)
 		require.NoError(w.Create(context.Background(), rental))
 		rental.Name = "great rental"
-		rowsUpdated, err := w.Update(context.Background(), rental, []string{"Name"}, nil, dbw.WithDebug(true))
+		rowsUpdated, err := w.Update(context.Background(), rental, []string{"Name"}, nil)
 		require.NoError(err)
 		assert.Equal(1, rowsUpdated)
 	})
@@ -524,7 +524,7 @@ func TestDb_Update(t *testing.T) {
 		require.NoError(err)
 		require.NoError(w.Create(context.Background(), rental))
 		rental.UserId = "not-allowed"
-		rowsUpdated, err := w.Update(context.Background(), rental, []string{"UserId"}, nil, dbw.WithDebug(true))
+		rowsUpdated, err := w.Update(context.Background(), rental, []string{"UserId"}, nil)
 		require.Error(err)
 		assert.Equal(0, rowsUpdated)
 		assert.Equal("dbw.Update: not allowed on primary key field UserId: invalid field mask", err.Error())
@@ -538,7 +538,7 @@ func TestDb_Update(t *testing.T) {
 		require.NoError(err)
 		require.NoError(w.Create(context.Background(), rental))
 		rental.UserId = ""
-		rowsUpdated, err := w.Update(context.Background(), rental, nil, []string{"Name"}, dbw.WithDebug(true))
+		rowsUpdated, err := w.Update(context.Background(), rental, nil, []string{"Name"})
 		require.Error(err)
 		assert.Equal(0, rowsUpdated)
 		assert.Equal("dbw.Update: primary key is not set for: [UserId]: invalid parameter", err.Error())

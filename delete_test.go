@@ -203,21 +203,24 @@ func TestDb_Delete(t *testing.T) {
 			assert.Error(err)
 			assert.ErrorIsf(err, dbw.ErrRecordNotFound, "received unexpected error: %v", err)
 		})
-		//
-		// TODO: jimlambrt Nov 2021: Currently gorm doesn't properly support
-		// deleting resources with composite primary keys.  see:
-		// https://github.com/go-gorm/gorm/issues/4879
-		// This needs to be resolved for Boundary and before this can be merged.
-		//
-		// t.Run("multi-column", func(t *testing.T) {
-		// 	assert, require := assert.New(t), require.New(t)
-		// 	user := testUser(t, testRw, "", "", "")
-		// 	car := testCar(t, testRw)
-		// 	rental := testRental(t, testRw, user.PublicId, car.PublicId)
-		// 	rowsDeleted, err := testRw.Delete(context.Background(), rental, dbw.WithDebug(true))
-		// 	require.NoError(err)
-		// 	assert.Equal(1, rowsDeleted)
-		// })
+		t.Run("multi-column", func(t *testing.T) {
+			assert, require := assert.New(t), require.New(t)
+			dbType, _, err := db.DbType()
+			require.NoError(err)
+			if dbType == dbw.Sqlite {
+				// gorm has an issue with sqlite and composite PKs:
+				// https://github.com/go-gorm/gorm/issues/4879
+				// When the issue is fixed then this conditional for skipping
+				// sqlite in this test should be removed.
+				return
+			}
+			user := testUser(t, testRw, "", "", "")
+			car := testCar(t, testRw)
+			rental := testRental(t, testRw, user.PublicId, car.PublicId)
+			rowsDeleted, err := testRw.Delete(context.Background(), rental)
+			require.NoError(err)
+			assert.Equal(1, rowsDeleted)
+		})
 		t.Run("hooks", func(t *testing.T) {
 			hookTests := []struct {
 				name     string

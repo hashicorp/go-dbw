@@ -28,7 +28,7 @@ func TestDb_Create(t *testing.T) {
 		user.CreateTime = ts
 		user.UpdateTime = ts
 		user.Name = "alice-" + id
-		err = w.Create(testCtx, user, dbw.WithDebug(true))
+		err = w.Create(testCtx, user)
 		require.NoError(err)
 		assert.NotEmpty(user.PublicId)
 		// make sure the database controlled the timestamp values

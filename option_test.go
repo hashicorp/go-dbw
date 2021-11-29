@@ -128,7 +128,7 @@ func Test_getOpts(t *testing.T) {
 
 		testLogger := hclog.New(&hclog.LoggerOptions{})
 		opts = GetOpts(WithLogger(testLogger))
-		testOpts.withGormFormatter = testLogger
+		testOpts.withLogger = testLogger
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithMaxOpenConnections", func(t *testing.T) {

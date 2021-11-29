@@ -43,7 +43,7 @@ type Options struct {
 	// withPrngValues is used to switch the ID generation to a pseudo-random mode
 	withPrngValues []string
 
-	withGormFormatter      hclog.Logger
+	withLogger             hclog.Logger
 	withMaxOpenConnections int
 	withMinOpenConnections int
 
@@ -159,7 +159,7 @@ func WithPrngValues(withPrngValues []string) Option {
 // valid for Open(..) and OpenWith(...)
 func WithLogger(l hclog.Logger) Option {
 	return func(o *Options) {
-		o.withGormFormatter = l
+		o.withLogger = l
 	}
 }
 
