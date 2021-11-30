@@ -3,7 +3,6 @@ version: v1beta1
 build:
   roots:
     - internal/proto/local
-    - internal/proto/third_party
 
 lint:
   use:

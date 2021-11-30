@@ -31,7 +31,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
 
       - name: Tests
-        run: DB_DIALECT=sqlite ./test_all.sh
+        run: make test-sqlite
 
   postgres:
     strategy:
@@ -73,4 +73,4 @@ jobs:
           key: ${{ runner.os }}-go-${{ matrix.go }}-${{ hashFiles('tests/go.mod') }}
 
       - name: Tests
-        run: DB_DIALECT=postgres DB_DSN="postgresql://go_db:go_db@localhost:9920/go_db?sslmode=disable" ./test_all.sh
+        run: make test-postgres
