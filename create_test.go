@@ -82,7 +82,6 @@ func TestDb_Create(t *testing.T) {
 			dbw.WithBeforeWrite(fn),
 		)
 		require.Error(err)
-
 	})
 	t.Run("WithAfterWrite", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
@@ -137,7 +136,6 @@ func TestDb_Create(t *testing.T) {
 			dbw.WithAfterWrite(fn),
 		)
 		require.Error(err)
-
 	})
 	t.Run("nil-tx", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)

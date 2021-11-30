@@ -8,7 +8,6 @@ import (
 
 // Writer interface defines create, update and retryable transaction handlers
 type Writer interface {
-
 	// DoTx will wrap the TxHandler in a retryable transaction
 	DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error)
 
