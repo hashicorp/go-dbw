@@ -39,7 +39,7 @@ func New(underlying *DB) *RW {
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. No options are currently
 // supported.
-func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...Option) (int, error) {
+func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, _ ...Option) (int, error) {
 	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -54,7 +54,7 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, _ ...O
 	return int(db.RowsAffected), nil
 }
 
-func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
+func (rw *RW) primaryFieldsAreZero(_ context.Context, i interface{}) ([]string, bool, error) {
 	const op = "dbw.primaryFieldsAreZero"
 	var fieldNames []string
 	tx := rw.underlying.wrapped.Model(i)
@@ -126,7 +126,7 @@ func raiseErrorOnHooks(i interface{}) error {
 	return nil
 }
 
-func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Options) (string, []interface{}, error) {
+func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Options) (string, []interface{}, error) {
 	const op = "dbw.whereClausesFromOpts"
 	var where []string
 	var args []interface{}
@@ -151,7 +151,7 @@ func (rw *RW) whereClausesFromOpts(ctx context.Context, i interface{}, opts Opti
 	return strings.Join(where, " and "), args, nil
 }
 
-func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
+func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []interface{}, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
 	var fieldValues []interface{}
@@ -196,7 +196,7 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 }
 
 // LookupWhere will lookup the first resource using a where clause with parameters (it only returns the first one)
-func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error {
+func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args ...interface{}) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)

@@ -18,8 +18,8 @@ func (rw *RW) Begin(ctx context.Context) (*RW, error) {
 	), nil
 }
 
-// Rollback will rollback the a transaction
-func (rw *RW) Rollback(ctx context.Context) error {
+// Rollback will rollback the current transaction
+func (rw *RW) Rollback(_ context.Context) error {
 	const op = "dbw.Rollback"
 	if err := rw.underlying.wrapped.Rollback().Error; err != nil {
 		return fmt.Errorf("%s: %w", op, err)

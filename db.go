@@ -64,13 +64,13 @@ func (db *DB) DbType() (typ DbType, rawName string, e error) {
 }
 
 // Debug will enable/disable debug info for the connection
-func (db *DB) Debug(on bool) {
+func (d *DB) Debug(on bool) {
 	if on {
 		// info level in the Gorm domain which maps to a debug level in this domain
-		db.wrapped.Logger = logger.Default.LogMode(logger.Info)
+		d.wrapped.Logger = logger.Default.LogMode(logger.Info)
 	} else {
 		// the default level in the gorm domain is: error level
-		db.wrapped.Logger = logger.Default.LogMode(logger.Error)
+		d.wrapped.Logger = logger.Default.LogMode(logger.Error)
 	}
 }
 
@@ -83,7 +83,7 @@ func (db *DB) Debug(on bool) {
 // Care should be take when deciding to use this for basic database operations
 // like Exec, Query, etc since these functions are already provided by dbw.RW
 // which provides a layer of encapsulation of the underlying database.
-func (d *DB) SqlDB(ctx context.Context) (*sql.DB, error) {
+func (d *DB) SqlDB(_ context.Context) (*sql.DB, error) {
 	const op = "dbw.(DB).SqlDB"
 	if d.wrapped == nil {
 		return nil, fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
@@ -187,7 +187,7 @@ type gormLogger struct {
 	logger hclog.Logger
 }
 
-func (g gormLogger) Printf(msg string, values ...interface{}) {
+func (g gormLogger) Printf(_ string, values ...interface{}) {
 	if len(values) > 1 {
 		switch values[1].(type) {
 		case *pgconn.PgError:

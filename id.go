@@ -12,7 +12,7 @@ import (
 // NewId creates a new random base62 ID with the provided prefix with an
 // underscore delimiter
 func NewId(prefix string, opt ...Option) (string, error) {
-	const op = "dbw.newId"
+	const op = "dbw.NewId"
 	if prefix == "" {
 		return "", fmt.Errorf("%s: missing prefix: %w", op, ErrInvalidParameter)
 	}

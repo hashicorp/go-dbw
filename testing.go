@@ -136,7 +136,7 @@ func WithTestDialect(dialect string) TestOption {
 	}
 }
 
-// WithTestMigrationProvides a way to specify an option func which runs a
+// WithTestMigration provides a way to specify an option func which runs a
 // required database migration to initialize the database
 func WithTestMigration(migrationFn func(ctx context.Context, dialect, url string) error) TestOption {
 	return func(o *testOptions) {

@@ -10,7 +10,7 @@ import (
 // operate within the context of any ongoing transaction for the Reader.  The
 // caller must close the returned *sql.Rows. Query can/should be used in
 // combination with ScanRows.
-func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, _ ...Option) (*sql.Rows, error) {
+func (rw *RW) Query(_ context.Context, sql string, values []interface{}, _ ...Option) (*sql.Rows, error) {
 	const op = "dbw.Query"
 	if rw.underlying == nil {
 		return nil, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)

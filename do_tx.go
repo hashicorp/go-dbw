@@ -10,15 +10,15 @@ import (
 // you should ensure that any objects written to the db in your TxHandler are retryable, which
 // means that the object may be sent to the db several times (retried), so
 // things like the primary key may need to be reset before retry.
-func (w *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, Handler TxHandler) (RetryInfo, error) {
+func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, handler TxHandler) (RetryInfo, error) {
 	const op = "dbw.DoTx"
-	if w.underlying == nil {
+	if rw.underlying == nil {
 		return RetryInfo{}, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
 	if backOff == nil {
 		return RetryInfo{}, fmt.Errorf("%s: missing backoff: %w", op, ErrInvalidParameter)
 	}
-	if Handler == nil {
+	if handler == nil {
 		return RetryInfo{}, fmt.Errorf("%s: missing handler: %w", op, ErrInvalidParameter)
 	}
 	if retryErrorsMatchingFn == nil {
@@ -31,11 +31,11 @@ func (w *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, r
 		}
 
 		// step one of this, start a transaction...
-		newTx := w.underlying.wrapped.WithContext(ctx)
+		newTx := rw.underlying.wrapped.WithContext(ctx)
 		newTx = newTx.Begin()
 
-		rw := &RW{underlying: &DB{newTx}}
-		if err := Handler(rw, rw); err != nil {
+		newRW := &RW{underlying: &DB{newTx}}
+		if err := handler(newRW, newRW); err != nil {
 			if err := newTx.Rollback().Error; err != nil {
 				return info, fmt.Errorf("%s: %w", op, err)
 			}
