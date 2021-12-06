@@ -36,6 +36,11 @@ func New(underlying *DB) *RW {
 	return &RW{underlying: underlying}
 }
 
+// DB returns the underlying DB
+func (rw *RW) DB() *DB {
+	return rw.underlying
+}
+
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. No options are currently
 // supported.
