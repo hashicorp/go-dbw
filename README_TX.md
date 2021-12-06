@@ -27,5 +27,29 @@ _, err = rw.DoTx(
         }
     },
 )
+if err != nil {
+    // handle errors from the transaction...
+}
+```
 
+You can also control the transaction yourself using `Begin`, `Rollback`, and
+`Commit`.
+
+```go
+// begin a transaction
+tx, err := rw.Begin(ctx)
+
+// do some database operations like creating a resource
+if err := tx.Create(...); err != nil {
+
+    // rollback the transaction if you 
+    if err := tx.Rollback(ctx); err != nil {
+        // you'll need to handle rollback errors... perhaps via retry.
+    }
+}
+
+// commit the transaction if there are not errors
+if err := tx.Commit(ctx); err != nil {
+    // handle commit errors
+}
 ```
