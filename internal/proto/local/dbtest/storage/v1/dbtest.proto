@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+// define a test proto package for the internal/db package.  These protos
+// are only used for unit tests and are not part of the rest of the domain model
+
+package dbtest.storage.v1;
+option go_package = "internal/dbtest;dbtest";
+
+import "google/protobuf/timestamp.proto";
+
+// Timestamp for storage messages.  We've defined a new local type wrapper
+// of google.protobuf.Timestamp so we can implement sql.Scanner and sql.Valuer
+// interfaces.  See:
+// https://golang.org/pkg/database/sql/#Scanner
+// https://golang.org/pkg/database/sql/driver/#Valuer
+message Timestamp {
+  google.protobuf.Timestamp timestamp = 1;
+}
+
+// TestUser model
+message StoreTestUser {
+  // public_id is the used to access the user via an API
+  // @inject_tag: gorm:"primaryKey;default:null"
+  string public_id = 4;
+
+  // create_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp create_time = 2;
+
+  // update_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp update_time = 3;
+
+  // name is the optional friendly name used to
+  // access the user via an API
+  // @inject_tag: `gorm:"default:null"`
+  string name = 5;
+
+  // @inject_tag: `gorm:"default:null"`
+  string phone_number = 6;
+
+  // @inject_tag: `gorm:"default:null"`
+  string email = 7;
+
+  // @inject_tag: `gorm:"default:null"`
+  uint32 version = 8;
+}
+
+// TestCar car model
+message StoreTestCar {
+  // public_id is the used to access the car via an API
+  // @inject_tag: gorm:"primaryKey;default:null"
+  string public_id = 4;
+
+  // create_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp create_time = 2;
+
+  // update_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp update_time = 3;
+
+  // name is the optional friendly name used to
+  // access the Scope via an API
+  // @inject_tag: `gorm:"default:null"`
+  string name = 5;
+
+  // @inject_tag: `gorm:"default:null"`
+  string model = 6;
+
+  // @inject_tag: `gorm:"default:null"`
+  int32 mpg = 7;
+
+  // intentionally there is no version field
+}
+
+// TestRental for test rental model
+message StoreTestRental {
+  // @inject_tag: `gorm:"primaryKey"`
+  string user_id = 1;
+
+  // @inject_tag: `gorm:"primaryKey"`
+  string car_id = 2;
+
+  // create_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp create_time = 3;
+
+  // update_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp update_time = 4;
+
+  // name is the optional friendly name used to
+  // access the rental via an API
+  // @inject_tag: `gorm:"default:null"`
+  string name = 5;
+
+  // @inject_tag: `gorm:"default:null"`
+  uint32 version = 6;
+}
+
+// StoreTestScooter used in the db tests only and provides a resource with
+// a private id.
+message StoreTestScooter {
+  // private_id is the used to access scooter, but not intended to be available
+  // via the API
+  // @inject_tag: `gorm:"primaryKey"`
+  string private_id = 1;
+
+  // create_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp create_time = 2;
+
+  // update_time from the RDBMS
+  // @inject_tag: `gorm:"default:CURRENT_TIMESTAMP"`
+  Timestamp update_time = 3;
+
+  // @inject_tag: `gorm:"default:null"`
+  string model = 4;
+
+  // @inject_tag: `gorm:"default:null"`
+  int32 mpg = 5;
+}
