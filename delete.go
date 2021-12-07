@@ -34,20 +34,20 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 			return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
 		}
 	}
-	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(i); err != nil {
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(i); err != nil {
 			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	db := rw.underlying.wrapped
-	if opts.WithVersion != nil || opts.withWhereClause != "" {
+	if opts.WithVersion != nil || opts.WithWhereClause != "" {
 		where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
 		if err != nil {
 			return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 		}
 		db = db.Where(where, args...)
 	}
-	if opts.withDebug {
+	if opts.WithDebug {
 		db = db.Debug()
 	}
 	db = db.Delete(i)
@@ -55,8 +55,8 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 		return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
 	rowsDeleted := int(db.RowsAffected)
-	if rowsDeleted > 0 && opts.withAfterWrite != nil {
-		if err := opts.withAfterWrite(i, rowsDeleted); err != nil {
+	if rowsDeleted > 0 && opts.WithAfterWrite != nil {
+		if err := opts.WithAfterWrite(i, rowsDeleted); err != nil {
 			return rowsDeleted, fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}
@@ -76,7 +76,7 @@ func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ..
 		return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
-	if opts.withLookup {
+	if opts.WithLookup {
 		return noRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
 	}
 	// verify that createItems are all the same type.
@@ -90,23 +90,23 @@ func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ..
 			return noRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
 		}
 	}
-	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(deleteItems); err != nil {
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(deleteItems); err != nil {
 			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	rowsDeleted := 0
 	for _, item := range deleteItems {
 		cnt, err := rw.Delete(ctx, item,
-			WithDebug(opts.withDebug),
+			WithDebug(opts.WithDebug),
 		)
 		rowsDeleted += cnt
 		if err != nil {
 			return rowsDeleted, fmt.Errorf("%s: %w", op, err)
 		}
 	}
-	if rowsDeleted > 0 && opts.withAfterWrite != nil {
-		if err := opts.withAfterWrite(deleteItems, int(rowsDeleted)); err != nil {
+	if rowsDeleted > 0 && opts.WithAfterWrite != nil {
+		if err := opts.WithAfterWrite(deleteItems, int(rowsDeleted)); err != nil {
 			return rowsDeleted, fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}

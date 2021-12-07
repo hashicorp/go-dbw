@@ -150,8 +150,8 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 		where = append(where, fmt.Sprintf("%s.version = ?", mDb.Statement.Schema.Table)) // we need to include the table name because of "on conflict" use cases
 		args = append(args, opts.WithVersion)
 	}
-	if opts.withWhereClause != "" {
-		where, args = append(where, opts.withWhereClause), append(args, opts.withWhereClauseArgs...)
+	if opts.WithWhereClause != "" {
+		where, args = append(where, opts.WithWhereClause), append(args, opts.WithWhereClauseArgs...)
 	}
 	return strings.Join(where, " and "), args, nil
 }
@@ -245,10 +245,10 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	}
 	var err error
 	db := rw.underlying.wrapped.WithContext(ctx)
-	if opts.withOrder != "" {
-		db = db.Order(opts.withOrder)
+	if opts.WithOrder != "" {
+		db = db.Order(opts.WithOrder)
 	}
-	if opts.withDebug {
+	if opts.WithDebug {
 		db = db.Debug()
 	}
 	// Perform limiting

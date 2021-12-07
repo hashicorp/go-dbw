@@ -18,41 +18,85 @@ func GetOpts(opt ...Option) Options {
 // Option - how Options are passed as arguments.
 type Option func(*Options)
 
-// Options - how Options are represented.
+// Options - how Options are represented which have been set via an Option
+// function.  Use GetOpts(...) to populated this struct with the options that
+// have been specified for an operation.  All option fields are exported so
+// they're available for use by other packages.
 type Options struct {
-	withBeforeWrite func(i interface{}) error
-	withAfterWrite  func(i interface{}, rowsAffected int) error
+	// WithBeforeWrite provides and option to provide a func to be called before a
+	// write operation. The i interface{} passed at runtime will be the resource(s)
+	// being written.
+	WithBeforeWrite func(i interface{}) error
 
-	withLookup bool
-	// WithLimit must be accessible in other packages.
+	// WithAfterWrite provides and option to provide a func to be called after a
+	// write operation.  The i interface{} passed at runtime will be the resource(s)
+	// being written.
+	WithAfterWrite func(i interface{}, rowsAffected int) error
+
+	// WithLookup enables a lookup after a write operation.
+	WithLookup bool
+
+	// WithLimit provides an option to provide a limit.  Intentionally allowing
+	// negative integers.   If WithLimit < 0, then unlimited results are returned.
+	// If WithLimit == 0, then default limits are used for results (see DefaultLimit
+	// const).
 	WithLimit int
-	// WithFieldMaskPaths must be accessible from other packages.
+
+	// WithFieldMaskPaths provides an option to provide field mask paths for update
+	// operations.
 	WithFieldMaskPaths []string
-	// WithNullPaths must be accessible from other packages.
+
+	// WithNullPaths provides an option to provide null paths for update
+	// operations.
 	WithNullPaths []string
 
-	// WithVersion must be accessible from other packages.
+	// WithVersion provides an option version number for update operations.  Using
+	// this option requires that your resource has a version column that's
+	// incremented for every successful update operation.  Version provides an
+	// optimistic locking mechanism for write operations.
 	WithVersion *uint32
 
-	withSkipVetForWrite bool
+	WithSkipVetForWrite bool
 
-	withWhereClause     string
-	withWhereClauseArgs []interface{}
-	withOrder           string
+	// WithWhereClause provides an option to provide a where clause for an
+	// operation.
+	WithWhereClause string
 
-	// withPrngValues is used to switch the ID generation to a pseudo-random mode
-	withPrngValues []string
+	// WithWhereClauseArgs provides an option to provide a where clause arguments for an
+	// operation.
+	WithWhereClauseArgs []interface{}
 
-	withLogger             hclog.Logger
-	withMaxOpenConnections int
-	withMinOpenConnections int
+	// WithOrder provides an option to provide an order when searching and looking
+	// up.
+	WithOrder string
 
-	// withDebug indicates that the given operation should invoke debug output
+	// WithPrngValues provides an option to provide values to seed an PRNG when generating IDs
+	WithPrngValues []string
+
+	// WithLogger specifies an optional hclog to use for db operations.  It's only
+	// valid for Open(..) and OpenWith(...)
+	WithLogger hclog.Logger
+
+	// WithMinOpenConnections specifices and optional min open connections for the
+	// database.  A value of zero means that there is no min.
+	WithMaxOpenConnections int
+
+	// WithMaxOpenConnections specifices and optional max open connections for the
+	// database.  A value of zero equals unlimited connections
+	WithMinOpenConnections int
+
+	// WithDebug indicates that the given operation should invoke debug output
 	// mode
-	withDebug bool
+	WithDebug bool
 
-	withOnConflict   *OnConflict
-	withRowsAffected *int64
+	// WithOnConflict specifies an optional on conflict criteria which specify
+	// alternative actions to take when an insert results in a unique constraint or
+	// exclusion constraint error
+	WithOnConflict *OnConflict
+
+	// WithRowsAffected specifies an option for returning the rows affected
+	// and typically used with "bulk" write operations.
+	WithRowsAffected *int64
 }
 
 func getDefaultOptions() Options {
@@ -67,7 +111,7 @@ func getDefaultOptions() Options {
 // being written.
 func WithBeforeWrite(fn func(i interface{}) error) Option {
 	return func(o *Options) {
-		o.withBeforeWrite = fn
+		o.WithBeforeWrite = fn
 	}
 }
 
@@ -76,14 +120,14 @@ func WithBeforeWrite(fn func(i interface{}) error) Option {
 // being written.
 func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option {
 	return func(o *Options) {
-		o.withAfterWrite = fn
+		o.WithAfterWrite = fn
 	}
 }
 
 // WithLookup enables a lookup after a write operation.
 func WithLookup(enable bool) Option {
 	return func(o *Options) {
-		o.withLookup = enable
+		o.WithLookup = enable
 	}
 }
 
@@ -96,7 +140,6 @@ func WithFieldMaskPaths(paths []string) Option {
 }
 
 // WithNullPaths provides an option to provide null paths for update operations.
-//
 func WithNullPaths(paths []string) Option {
 	return func(o *Options) {
 		o.WithNullPaths = paths
@@ -127,7 +170,7 @@ func WithVersion(version *uint32) Option {
 // testing lower-level SQL triggers and constraints
 func WithSkipVetForWrite(enable bool) Option {
 	return func(o *Options) {
-		o.withSkipVetForWrite = enable
+		o.WithSkipVetForWrite = enable
 	}
 }
 
@@ -135,8 +178,8 @@ func WithSkipVetForWrite(enable bool) Option {
 // operation.
 func WithWhere(whereClause string, args ...interface{}) Option {
 	return func(o *Options) {
-		o.withWhereClause = whereClause
-		o.withWhereClauseArgs = append(o.withWhereClauseArgs, args...)
+		o.WithWhereClause = whereClause
+		o.WithWhereClauseArgs = append(o.WithWhereClauseArgs, args...)
 	}
 }
 
@@ -144,14 +187,14 @@ func WithWhere(whereClause string, args ...interface{}) Option {
 // up.
 func WithOrder(withOrder string) Option {
 	return func(o *Options) {
-		o.withOrder = withOrder
+		o.WithOrder = withOrder
 	}
 }
 
 // WithPrngValues provides an option to provide values to seed an PRNG when generating IDs
 func WithPrngValues(withPrngValues []string) Option {
 	return func(o *Options) {
-		o.withPrngValues = withPrngValues
+		o.WithPrngValues = withPrngValues
 	}
 }
 
@@ -159,7 +202,7 @@ func WithPrngValues(withPrngValues []string) Option {
 // valid for Open(..) and OpenWith(...)
 func WithLogger(l hclog.Logger) Option {
 	return func(o *Options) {
-		o.withLogger = l
+		o.WithLogger = l
 	}
 }
 
@@ -167,7 +210,7 @@ func WithLogger(l hclog.Logger) Option {
 // database.  A value of zero equals unlimited connections
 func WithMaxOpenConnections(max int) Option {
 	return func(o *Options) {
-		o.withMaxOpenConnections = max
+		o.WithMaxOpenConnections = max
 	}
 }
 
@@ -175,7 +218,7 @@ func WithMaxOpenConnections(max int) Option {
 // database.  A value of zero means that there is no min.
 func WithMinOpenConnections(max int) Option {
 	return func(o *Options) {
-		o.withMinOpenConnections = max
+		o.WithMinOpenConnections = max
 	}
 }
 
@@ -183,7 +226,7 @@ func WithMinOpenConnections(max int) Option {
 // database output
 func WithDebug(with bool) Option {
 	return func(o *Options) {
-		o.withDebug = with
+		o.WithDebug = with
 	}
 }
 
@@ -192,7 +235,7 @@ func WithDebug(with bool) Option {
 // exclusion constraint error
 func WithOnConflict(onConflict *OnConflict) Option {
 	return func(o *Options) {
-		o.withOnConflict = onConflict
+		o.WithOnConflict = onConflict
 	}
 }
 
@@ -200,6 +243,6 @@ func WithOnConflict(onConflict *OnConflict) Option {
 // and typically used with "bulk" write operations.
 func WithReturnRowsAffected(rowsAffected *int64) Option {
 	return func(o *Options) {
-		o.withRowsAffected = rowsAffected
+		o.WithRowsAffected = rowsAffected
 	}
 }

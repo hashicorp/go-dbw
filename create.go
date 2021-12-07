@@ -84,7 +84,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	// db to manage them
 	setFieldsToNil(i, NonCreatableFields())
 
-	if !opts.withSkipVetForWrite {
+	if !opts.WithSkipVetForWrite {
 		if vetter, ok := i.(VetForWriter); ok {
 			if err := vetter.VetForWrite(ctx, rw, CreateOp); err != nil {
 				return fmt.Errorf("%s: %w", op, err)
@@ -93,28 +93,28 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	}
 
 	db := rw.underlying.wrapped.WithContext(ctx)
-	if opts.withOnConflict != nil {
+	if opts.WithOnConflict != nil {
 		c := clause.OnConflict{}
-		switch opts.withOnConflict.Target.(type) {
+		switch opts.WithOnConflict.Target.(type) {
 		case Constraint:
-			c.OnConstraint = string(opts.withOnConflict.Target.(Constraint))
+			c.OnConstraint = string(opts.WithOnConflict.Target.(Constraint))
 		case Columns:
-			columns := make([]clause.Column, 0, len(opts.withOnConflict.Target.(Columns)))
-			for _, name := range opts.withOnConflict.Target.(Columns) {
+			columns := make([]clause.Column, 0, len(opts.WithOnConflict.Target.(Columns)))
+			for _, name := range opts.WithOnConflict.Target.(Columns) {
 				columns = append(columns, clause.Column{Name: name})
 			}
 			c.Columns = columns
 		default:
-			return fmt.Errorf("%s: invalid conflict target %v: %w", op, reflect.TypeOf(opts.withOnConflict.Target), ErrInvalidParameter)
+			return fmt.Errorf("%s: invalid conflict target %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Target), ErrInvalidParameter)
 		}
 
-		switch opts.withOnConflict.Action.(type) {
+		switch opts.WithOnConflict.Action.(type) {
 		case DoNothing:
 			c.DoNothing = true
 		case UpdateAll:
 			c.UpdateAll = true
 		case []ColumnValue:
-			updates := opts.withOnConflict.Action.([]ColumnValue)
+			updates := opts.WithOnConflict.Action.([]ColumnValue)
 			set := make(clause.Set, 0, len(updates))
 			for _, s := range updates {
 				// make sure it's not one of the std immutable columns
@@ -132,9 +132,9 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 			}
 			c.DoUpdates = set
 		default:
-			return fmt.Errorf("%s: invalid conflict action %v: %w", op, reflect.TypeOf(opts.withOnConflict.Action), ErrInvalidParameter)
+			return fmt.Errorf("%s: invalid conflict action %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Action), ErrInvalidParameter)
 		}
-		if opts.WithVersion != nil || opts.withWhereClause != "" {
+		if opts.WithVersion != nil || opts.WithWhereClause != "" {
 			where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
 			if err != nil {
 				return fmt.Errorf("%s: %w", op, err)
@@ -144,12 +144,12 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 		}
 		db = db.Clauses(c)
 	}
-	if opts.withDebug {
+	if opts.WithDebug {
 		db = db.Debug()
 	}
 
-	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(i); err != nil {
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(i); err != nil {
 			return fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
@@ -157,11 +157,11 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	if tx.Error != nil {
 		return fmt.Errorf("%s: create failed: %w", op, tx.Error)
 	}
-	if opts.withRowsAffected != nil {
-		*opts.withRowsAffected = tx.RowsAffected
+	if opts.WithRowsAffected != nil {
+		*opts.WithRowsAffected = tx.RowsAffected
 	}
-	if tx.RowsAffected > 0 && opts.withAfterWrite != nil {
-		if err := opts.withAfterWrite(i, int(tx.RowsAffected)); err != nil {
+	if tx.RowsAffected > 0 && opts.WithAfterWrite != nil {
+		if err := opts.WithAfterWrite(i, int(tx.RowsAffected)); err != nil {
 			return fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}
@@ -186,7 +186,7 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
-	if opts.withLookup {
+	if opts.WithLookup {
 		return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
 	}
 	// verify that createItems are all the same type.
@@ -200,28 +200,28 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 			return fmt.Errorf("%s: create items contains disparate types. item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
 		}
 	}
-	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(createItems); err != nil {
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(createItems); err != nil {
 			return fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	var rowsAffected int64
 	for _, item := range createItems {
 		if err := rw.Create(ctx, item,
-			WithOnConflict(opts.withOnConflict),
+			WithOnConflict(opts.WithOnConflict),
 			WithReturnRowsAffected(&rowsAffected),
-			WithDebug(opts.withDebug),
+			WithDebug(opts.WithDebug),
 			WithVersion(opts.WithVersion),
-			WithWhere(opts.withWhereClause, opts.withWhereClauseArgs...),
+			WithWhere(opts.WithWhereClause, opts.WithWhereClauseArgs...),
 		); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
-	if opts.withRowsAffected != nil {
-		*opts.withRowsAffected = rowsAffected
+	if opts.WithRowsAffected != nil {
+		*opts.WithRowsAffected = rowsAffected
 	}
-	if opts.withAfterWrite != nil {
-		if err := opts.withAfterWrite(createItems, int(rowsAffected)); err != nil {
+	if opts.WithAfterWrite != nil {
+		if err := opts.WithAfterWrite(createItems, int(rowsAffected)); err != nil {
 			return fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}

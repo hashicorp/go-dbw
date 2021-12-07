@@ -15,13 +15,13 @@ func Test_getOpts(t *testing.T) {
 		// test default of true
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withLookup = false
+		testOpts.WithLookup = false
 		assert.Equal(opts, testOpts)
 
 		// try setting to false
 		opts = GetOpts(WithLookup(true))
 		testOpts = getDefaultOptions()
-		testOpts.withLookup = true
+		testOpts.WithLookup = true
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithFieldMaskPaths", func(t *testing.T) {
@@ -88,11 +88,11 @@ func Test_getOpts(t *testing.T) {
 		// test default of false
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withSkipVetForWrite = false
+		testOpts.WithSkipVetForWrite = false
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithSkipVetForWrite(true))
 		testOpts = getDefaultOptions()
-		testOpts.withSkipVetForWrite = true
+		testOpts.WithSkipVetForWrite = true
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithWhere", func(t *testing.T) {
@@ -100,12 +100,12 @@ func Test_getOpts(t *testing.T) {
 		// test default of false
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withWhereClause = ""
-		testOpts.withWhereClauseArgs = nil
+		testOpts.WithWhereClause = ""
+		testOpts.WithWhereClauseArgs = nil
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithWhere("id = ? and foo = ?", 1234, "bar"))
-		testOpts.withWhereClause = "id = ? and foo = ?"
-		testOpts.withWhereClauseArgs = []interface{}{1234, "bar"}
+		testOpts.WithWhereClause = "id = ? and foo = ?"
+		testOpts.WithWhereClauseArgs = []interface{}{1234, "bar"}
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithOrder", func(t *testing.T) {
@@ -113,10 +113,10 @@ func Test_getOpts(t *testing.T) {
 		// test default of false
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withOrder = ""
+		testOpts.WithOrder = ""
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithOrder("version desc"))
-		testOpts.withOrder = "version desc"
+		testOpts.WithOrder = "version desc"
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithGormFormatter", func(t *testing.T) {
@@ -128,7 +128,7 @@ func Test_getOpts(t *testing.T) {
 
 		testLogger := hclog.New(&hclog.LoggerOptions{})
 		opts = GetOpts(WithLogger(testLogger))
-		testOpts.withLogger = testLogger
+		testOpts.WithLogger = testLogger
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithMaxOpenConnections", func(t *testing.T) {
@@ -138,7 +138,7 @@ func Test_getOpts(t *testing.T) {
 		testOpts := getDefaultOptions()
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithMaxOpenConnections(22))
-		testOpts.withMaxOpenConnections = 22
+		testOpts.WithMaxOpenConnections = 22
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithDebug", func(t *testing.T) {
@@ -149,7 +149,7 @@ func Test_getOpts(t *testing.T) {
 		assert.Equal(opts, testOpts)
 		// try setting to true
 		opts = GetOpts(WithDebug(true))
-		testOpts.withDebug = true
+		testOpts.WithDebug = true
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithOnConflict", func(t *testing.T) {
@@ -165,7 +165,7 @@ func Test_getOpts(t *testing.T) {
 			Action: append(columns, columnValues...),
 		}
 		opts = GetOpts(WithOnConflict(&testOnConflict))
-		testOpts.withOnConflict = &testOnConflict
+		testOpts.WithOnConflict = &testOnConflict
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithReturnRowsAffected", func(t *testing.T) {
@@ -177,39 +177,39 @@ func Test_getOpts(t *testing.T) {
 
 		var rowsAffected int64
 		opts = GetOpts(WithReturnRowsAffected(&rowsAffected))
-		testOpts.withRowsAffected = &rowsAffected
+		testOpts.WithRowsAffected = &rowsAffected
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithBeforeWrite", func(t *testing.T) {
 		assert := assert.New(t)
 		// test defaults
 		opts := GetOpts()
-		assert.Nil(opts.withBeforeWrite)
+		assert.Nil(opts.WithBeforeWrite)
 
 		fn := func(interface{}) error { return nil }
 		opts = GetOpts(WithBeforeWrite(fn))
-		assert.NotNil(opts.withBeforeWrite)
+		assert.NotNil(opts.WithBeforeWrite)
 	})
 	t.Run("WithAfterWrite", func(t *testing.T) {
 		assert := assert.New(t)
 		// test defaults
 		opts := GetOpts()
-		assert.Nil(opts.withAfterWrite)
+		assert.Nil(opts.WithAfterWrite)
 
 		fn := func(interface{}, int) error { return nil }
 		opts = GetOpts(WithAfterWrite(fn))
-		assert.NotNil(opts.withAfterWrite)
+		assert.NotNil(opts.WithAfterWrite)
 	})
 	t.Run("WithMaxOpenConnections", func(t *testing.T) {
 		assert := assert.New(t)
 		// test default of 0
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withMaxOpenConnections = 0
+		testOpts.WithMaxOpenConnections = 0
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithMaxOpenConnections(1))
 		testOpts = getDefaultOptions()
-		testOpts.withMaxOpenConnections = 1
+		testOpts.WithMaxOpenConnections = 1
 		assert.Equal(opts, testOpts)
 	})
 	t.Run("WithMinOpenConnections", func(t *testing.T) {
@@ -217,11 +217,11 @@ func Test_getOpts(t *testing.T) {
 		// test default of 0
 		opts := GetOpts()
 		testOpts := getDefaultOptions()
-		testOpts.withMinOpenConnections = 0
+		testOpts.WithMinOpenConnections = 0
 		assert.Equal(opts, testOpts)
 		opts = GetOpts(WithMinOpenConnections(1))
 		testOpts = getDefaultOptions()
-		testOpts.withMinOpenConnections = 1
+		testOpts.WithMinOpenConnections = 1
 		assert.Equal(opts, testOpts)
 	})
 }

@@ -19,8 +19,8 @@ func NewId(prefix string, opt ...Option) (string, error) {
 	var publicId string
 	var err error
 	opts := GetOpts(opt...)
-	if len(opts.withPrngValues) > 0 {
-		sum := blake2b.Sum256([]byte(strings.Join(opts.withPrngValues, "|")))
+	if len(opts.WithPrngValues) > 0 {
+		sum := blake2b.Sum256([]byte(strings.Join(opts.WithPrngValues, "|")))
 		reader := bytes.NewReader(sum[0:])
 		publicId, err = base62.RandomWithReader(10, reader)
 	} else {

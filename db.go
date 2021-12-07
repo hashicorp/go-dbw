@@ -160,9 +160,9 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		return nil, fmt.Errorf("unable to open database: %w", err)
 	}
 	opts := GetOpts(opt...)
-	if opts.withLogger != nil {
+	if opts.WithLogger != nil {
 		newLogger := logger.New(
-			getGormLogger(opts.withLogger),
+			getGormLogger(opts.WithLogger),
 			logger.Config{
 				LogLevel: logger.Error, // Log level
 				Colorful: false,        // Disable color
@@ -170,15 +170,15 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		)
 		db = db.Session(&gorm.Session{Logger: newLogger})
 	}
-	if opts.withMaxOpenConnections > 0 {
-		if opts.withMinOpenConnections > 0 && (opts.withMaxOpenConnections < opts.withMinOpenConnections) {
-			return nil, fmt.Errorf("unable to create db object with dialect %s: %s", dialect, fmt.Sprintf("max_open_connections must be unlimited by setting 0 or at least %d", opts.withMinOpenConnections))
+	if opts.WithMaxOpenConnections > 0 {
+		if opts.WithMinOpenConnections > 0 && (opts.WithMaxOpenConnections < opts.WithMinOpenConnections) {
+			return nil, fmt.Errorf("unable to create db object with dialect %s: %s", dialect, fmt.Sprintf("max_open_connections must be unlimited by setting 0 or at least %d", opts.WithMinOpenConnections))
 		}
 		underlyingDB, err := db.DB()
 		if err != nil {
 			return nil, fmt.Errorf("unable retreive db: %w", err)
 		}
-		underlyingDB.SetMaxOpenConns(opts.withMaxOpenConnections)
+		underlyingDB.SetMaxOpenConns(opts.WithMaxOpenConnections)
 	}
 	return &DB{wrapped: db}, nil
 }

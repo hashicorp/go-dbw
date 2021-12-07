@@ -108,24 +108,24 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 		}
 	}
 
-	if !opts.withSkipVetForWrite {
+	if !opts.WithSkipVetForWrite {
 		if vetter, ok := i.(VetForWriter); ok {
 			if err := vetter.VetForWrite(ctx, rw, UpdateOp, WithFieldMaskPaths(fieldMaskPaths), WithNullPaths(setToNullPaths)); err != nil {
 				return noRowsAffected, fmt.Errorf("%s: %w", op, err)
 			}
 		}
 	}
-	if opts.withBeforeWrite != nil {
-		if err := opts.withBeforeWrite(i); err != nil {
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(i); err != nil {
 			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 	underlying := rw.underlying.wrapped.Model(i)
-	if opts.withDebug {
+	if opts.WithDebug {
 		underlying = underlying.Debug()
 	}
 	switch {
-	case opts.WithVersion != nil || opts.withWhereClause != "":
+	case opts.WithVersion != nil || opts.WithWhereClause != "":
 		where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
 		if err != nil {
 			return noRowsAffected, fmt.Errorf("%s: %w", op, err)
@@ -141,8 +141,8 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 		return noRowsAffected, fmt.Errorf("%s: %w", op, underlying.Error)
 	}
 	rowsUpdated := int(underlying.RowsAffected)
-	if rowsUpdated > 0 && (opts.withAfterWrite != nil) {
-		if err := opts.withAfterWrite(i, rowsUpdated); err != nil {
+	if rowsUpdated > 0 && (opts.WithAfterWrite != nil) {
+		if err := opts.WithAfterWrite(i, rowsUpdated); err != nil {
 			return rowsUpdated, fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}
