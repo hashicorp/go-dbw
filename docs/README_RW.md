@@ -2,8 +2,14 @@
 [![Go
 Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
-`RW` provides a type which implements both the interfaces of `dbw.Reader` and
-`dbw.Writer`. Many `RW`s can (and likely should) share the same `dbw.DB`, since the `DB`
+[RW](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW) provides a type which
+implements both the interfaces of
+[dbw.Reader](https://pkg.go.dev/github.com/hashicorp/go-dbw#Reader) and
+[dbw.Writer](https://pkg.go.dev/github.com/hashicorp/go-dbw#Writer). Many
+[RWs](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW)  
+can (and likely should) share the same
+[dbw.DB](https://pkg.go.dev/github.com/hashicorp/go-dbw#DB), since the
+[dbw.DB](https://pkg.go.dev/github.com/hashicorp/go-dbw#DB)
 is responsible for connection pooling.   
 
 ```go

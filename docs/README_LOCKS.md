@@ -1,9 +1,9 @@
 # Optimistic locking for write operations
 [![Go Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
-`dbw` provides the `dbw.WithVersion(...)` option for write operations to enable
+`dbw` provides the [dbw.WithVersion(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#WithVersion) option for write operations to enable
 an optimistic locking pattern.  Using this pattern, the caller must first read
-a resource from the database and get it's version.  Then the caller passes the version in
+a resource from the database and get its version. Then the caller passes the version in
 with the write operation and the operation will fail if another caller has
 updated the resource's version in the meantime.
 
