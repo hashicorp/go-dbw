@@ -26,7 +26,7 @@ database resources fairly trivial for common use cases. It also supports an
 option for its
 [RW.Create(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Create) 
 function for complex scenarios. [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) also allows you to opt out of its CRUD
-functions and use exec, query and scan rows directly.  You may want to carefully
+functions and use exec, query and scan rows directly. You may want to carefully
 weigh when it's appropriate to use exec and query directly, since it's likely that
 each time you use them you're leaking a bit of your database layer schema into
 your application's domain.  
