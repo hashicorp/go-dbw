@@ -6,7 +6,7 @@ supports connecting and using any database with a
 [GORM](https://github.com/go-gorm/gorm) driver.   
 
 [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) is intended to completely
-encapsulate an  application's access to it's database with the exception of
+encapsulate an application's access to its database with the exception of
 migrations. [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) is
 	
 intentionally not an ORM and it removes typical ORM abstractions like "advanced
