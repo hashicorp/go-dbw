@@ -46,14 +46,14 @@ func NonUpdatableFields() []string {
 // returned the caller must decide what to do with the transaction, which almost
 // always should be to rollback.  Update returns the number of rows updated.
 //
-// Supported options: WithBeforeWrite, WithAfterWrite, WithWhere, WithDebug, and
-// WithVersion. If WithVersion is used, then the update will include the version
-// number in the update where clause, which basically makes the update use
-// optimistic locking and the update will only succeed if the existing rows
-// version matches the WithVersion option. Zero is not a valid value for the
-// WithVersion option and will return an error. WithWhere allows specifying an
-// additional constraint on the operation in addition to the PKs. WithDebug will
-// turn on debugging for the update call.
+// Supported options: WithBeforeWrite, WithAfterWrite, WithWhere, WithDebug,
+// WithTable and WithVersion. If WithVersion is used, then the update will
+// include the version number in the update where clause, which basically makes
+// the update use optimistic locking and the update will only succeed if the
+// existing rows version matches the WithVersion option. Zero is not a valid
+// value for the WithVersion option and will return an error. WithWhere allows
+// specifying an additional constraint on the operation in addition to the PKs.
+// WithDebug will turn on debugging for the update call.
 func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
 	const op = "dbw.Update"
 	if rw.underlying == nil {
@@ -123,6 +123,9 @@ func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string
 	underlying := rw.underlying.wrapped.Model(i)
 	if opts.WithDebug {
 		underlying = underlying.Debug()
+	}
+	if opts.WithTable != "" {
+		underlying = underlying.Table(opts.WithTable)
 	}
 	switch {
 	case opts.WithVersion != nil || opts.WithWhereClause != "":

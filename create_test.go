@@ -182,6 +182,39 @@ func TestDb_Create(t *testing.T) {
 			})
 		}
 	})
+	t.Run("WithTable", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		w := dbw.New(db)
+		id, err := dbw.NewId("u")
+		require.NoError(err)
+		user, err := dbtest.NewTestUser()
+		require.NoError(err)
+		ts := &dbtest.Timestamp{Timestamp: timestamppb.Now()}
+		user.CreateTime = ts
+		user.UpdateTime = ts
+		user.Name = "alice-" + id
+		err = w.Create(testCtx, user, dbw.WithTable(user.TableName()))
+		require.NoError(err)
+		assert.NotEmpty(user.PublicId)
+		// make sure the database controlled the timestamp values
+		assert.NotEqual(ts, user.GetCreateTime())
+		assert.NotEqual(ts, user.GetUpdateTime())
+
+		foundUser, err := dbtest.NewTestUser()
+		require.NoError(err)
+		foundUser.PublicId = user.PublicId
+		err = w.LookupByPublicId(testCtx, foundUser)
+		require.NoError(err)
+		assert.Equal(foundUser.PublicId, user.PublicId)
+
+		user2, err := dbtest.NewTestUser()
+		require.NoError(err)
+		err = w.Create(testCtx, user2, dbw.WithTable("invalid-table"))
+		require.Error(err)
+
+		err = w.Create(testCtx, user2, dbw.WithTable(user.TableName()))
+		require.NoError(err)
+	})
 }
 
 func TestDb_Create_OnConflict(t *testing.T) {
@@ -471,6 +504,9 @@ func TestDb_CreateItems(t *testing.T) {
 	conn, _ := dbw.TestSetup(t)
 	testRw := dbw.New(conn)
 
+	testWithTableUser, err := dbtest.NewTestUser()
+	require.NoError(t, err)
+
 	createFn := func() []interface{} {
 		results := []interface{}{}
 		for i := 0; i < 10; i++ {
@@ -531,6 +567,15 @@ func TestDb_CreateItems(t *testing.T) {
 					dbw.WithBeforeWrite(successBeforeFn),
 					dbw.WithAfterWrite(successAfterFn),
 				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "with-table",
+			rw:   testRw,
+			args: args{
+				createItems: createFn(),
+				opt:         []dbw.Option{dbw.WithTable(testWithTableUser.TableName())},
 			},
 			wantErr: false,
 		},

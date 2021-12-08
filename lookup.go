@@ -12,8 +12,8 @@ import (
 // unique. If the resource implements either ResourcePublicIder or
 // ResourcePrivateIder interface, then they are used as the resource's
 // primary key for lookup.  Otherwise, the resource tags are used to
-// determine it's primary key(s) for lookup.  Options are ignored.
-func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...Option) error {
+// determine it's primary key(s) for lookup.  The WithTable option is supported.
+func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ...Option) error {
 	const op = "dbw.LookupById"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -28,7 +28,12 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...O
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := rw.underlying.wrapped.Where(where, keys...).First(resourceWithIder).Error; err != nil {
+	opts := GetOpts(opt...)
+	db := rw.underlying.wrapped
+	if opts.WithTable != "" {
+		db = db.Table(opts.WithTable)
+	}
+	if err := db.Where(where, keys...).First(resourceWithIder).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
 		}
@@ -38,9 +43,9 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, _ ...O
 }
 
 // LookupByPublicId will lookup resource by its public_id, which must be unique.
-// Options are ignored.
-func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, _ ...Option) error {
-	return rw.LookupBy(ctx, resource)
+// The WithTable option is supported.
+func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error {
+	return rw.LookupBy(ctx, resource, opt...)
 }
 
 func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {

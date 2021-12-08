@@ -14,6 +14,9 @@ import (
 func TestDb_Delete(t *testing.T) {
 	db, _ := dbw.TestSetup(t)
 	testRw := dbw.New(db)
+
+	testWithTableUser, err := dbtest.NewTestUser()
+	require.NoError(t, err)
 	newUser := func() *dbtest.TestUser {
 		u, err := dbtest.NewTestUser()
 		require.NoError(t, err)
@@ -82,6 +85,25 @@ func TestDb_Delete(t *testing.T) {
 					dbw.WithBeforeWrite(successBeforeFn),
 					dbw.WithAfterWrite(successAfterFn),
 				},
+			},
+			want:    1,
+			wantErr: false,
+		},
+		{
+			name: "with-table-error",
+			rw:   testRw,
+			args: args{
+				i:   newUser(),
+				opt: []dbw.Option{dbw.WithDebug(true), dbw.WithTable("invalid-table-name")},
+			},
+			wantErr: true,
+		},
+		{
+			name: "with-table",
+			rw:   testRw,
+			args: args{
+				i:   newUser(),
+				opt: []dbw.Option{dbw.WithDebug(true), dbw.WithTable(testWithTableUser.TableName())},
 			},
 			want:    1,
 			wantErr: false,
@@ -186,7 +208,9 @@ func TestDb_Delete(t *testing.T) {
 			got, err := tt.rw.Delete(context.Background(), tt.args.i, tt.args.opt...)
 			if tt.wantErr {
 				require.Error(err)
-				assert.ErrorIsf(err, tt.wantErrIs, "received unexpected error: %v", err)
+				if tt.wantErrIs != nil {
+					assert.ErrorIsf(err, tt.wantErrIs, "received unexpected error: %v", err)
+				}
 				return
 			}
 			require.NoError(err)
@@ -248,6 +272,9 @@ func TestDb_DeleteItems(t *testing.T) {
 	db, _ := dbw.TestSetup(t)
 	testRw := dbw.New(db)
 
+	testWithTableUser, err := dbtest.NewTestUser()
+	require.NoError(t, err)
+
 	createFn := func() []interface{} {
 		results := []interface{}{}
 		for i := 0; i < 10; i++ {
@@ -303,6 +330,25 @@ func TestDb_DeleteItems(t *testing.T) {
 			},
 			wantRowsDeleted: 10,
 			wantErr:         false,
+		},
+		{
+			name: "with-table",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: createFn(),
+				opt:         []dbw.Option{dbw.WithTable(testWithTableUser.TableName())},
+			},
+			wantRowsDeleted: 10,
+			wantErr:         false,
+		},
+		{
+			name: "with-table-fail",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: createFn(),
+				opt:         []dbw.Option{dbw.WithTable("invalid-table-name")},
+			},
+			wantErr: true,
 		},
 		{
 			name: "simple-with-before-after-success",
@@ -394,7 +440,9 @@ func TestDb_DeleteItems(t *testing.T) {
 			rowsDeleted, err := tt.rw.DeleteItems(context.Background(), tt.args.deleteItems, tt.args.opt...)
 			if tt.wantErr {
 				require.Error(err)
-				assert.ErrorIs(err, tt.wantErrIs)
+				if tt.wantErrIs != nil {
+					assert.ErrorIs(err, tt.wantErrIs)
+				}
 				return
 			}
 			require.NoError(err)

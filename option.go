@@ -97,6 +97,10 @@ type Options struct {
 	// WithRowsAffected specifies an option for returning the rows affected
 	// and typically used with "bulk" write operations.
 	WithRowsAffected *int64
+
+	// WithTable specifies an option for setting a table name to use for the
+	// operation.
+	WithTable string
 }
 
 func getDefaultOptions() Options {
@@ -244,5 +248,13 @@ func WithOnConflict(onConflict *OnConflict) Option {
 func WithReturnRowsAffected(rowsAffected *int64) Option {
 	return func(o *Options) {
 		o.WithRowsAffected = rowsAffected
+	}
+}
+
+// WithTable specifies an option for setting a table name to use for the
+// operation.
+func WithTable(name string) Option {
+	return func(o *Options) {
+		o.WithTable = name
 	}
 }

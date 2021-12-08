@@ -6,8 +6,8 @@ import (
 	"reflect"
 )
 
-// Delete a resource in the db with options: WithWhere, WithDebug and
-// WithVersion. WithWhere and WithVersion allows specifying a additional
+// Delete a resource in the db with options: WithWhere, WithDebug, WithTable,
+// and WithVersion. WithWhere and WithVersion allows specifying a additional
 // constraints on the operation in addition to the PKs. Delete returns the
 // number of rows deleted and any errors.
 func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
@@ -50,6 +50,9 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 	if opts.WithDebug {
 		db = db.Debug()
 	}
+	if opts.WithTable != "" {
+		db = db.Table(opts.WithTable)
+	}
 	db = db.Delete(i)
 	if db.Error != nil {
 		return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
@@ -63,7 +66,8 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 	return rowsDeleted, nil
 }
 
-// DeleteItems will delete multiple items of the same type. Options supported: WithDebug
+// DeleteItems will delete multiple items of the same type. Options supported:
+// WithDebug, WithTable
 func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
 	const op = "dbw.DeleteItems"
 	if rw.underlying == nil {
@@ -99,6 +103,7 @@ func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ..
 	for _, item := range deleteItems {
 		cnt, err := rw.Delete(ctx, item,
 			WithDebug(opts.WithDebug),
+			WithTable(opts.WithTable),
 		)
 		rowsDeleted += cnt
 		if err != nil {
