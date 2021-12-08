@@ -16,7 +16,7 @@ Of course you can use [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) for
 complicated queries, it's just that
 [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) doesn't try to reinvent
 SQL by providing some sort of pattern for building them with functions. Of
-course,  [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) also provides
+course, [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) also provides
 lookup/search functions when you simply need to read resources from the
 database. 
 
