@@ -2,9 +2,14 @@
 [![Go
 Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
-`dbw` supports transactions via `dbw.DoTx(...)`  `DoTx` supports any backoff
-strategy that implements the `Backoff` interface.  There are two backoffs
-provided by the package: `ConstBackOff` and `ExpBackoff`.
+`dbw` supports transactions via
+[RW.DoTx(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.DoTx) which
+uses any backoff strategy that implements the
+[Backoff](https://pkg.go.dev/github.com/hashicorp/go-dbw#Backoff) interface.
+There are two backoffs
+provided by the package:
+[ConstBackOff](https://pkg.go.dev/github.com/hashicorp/go-dbw#ConstBackoff) and
+[ExpBackoff](https://pkg.go.dev/github.com/hashicorp/go-dbw#ExpBackoff).
 
 ```go
 // Example with ExpBackoff
@@ -32,8 +37,10 @@ if err != nil {
 }
 ```
 
-You can also control the transaction yourself using `Begin`, `Rollback`, and
-`Commit`.
+You can also control the transaction yourself using:
+* [RW.Begin(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Begin),
+* [RW.Rollback(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Rollback)
+* [RW.Commit(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Commit)
 
 ```go
 // begin a transaction

@@ -9,7 +9,7 @@ Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pk
 "building" a query.  Instead, `dbw` provides a set of functions for directly issuing SQL to the database and scanning the results back into Go structs. 
 
 
-## Query example with CTE
+## [RW.Query](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Query) and [RW.ScanRows(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.ScanRows) example with a CTE
 ```go
 where := `
 with user_rentals as (
@@ -35,7 +35,7 @@ for rows.Next() {
 }
 ```
 
-## Exec example
+## [RW.Exec](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Exec) example
 
 ```go
 where := `

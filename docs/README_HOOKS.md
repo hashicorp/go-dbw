@@ -3,7 +3,9 @@
 Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
 dbw provides two options for write operations which give callers hooks before
-and after the write operations: `WithBeforeWrite(...)` and `WithAfterWrite(...)`
+and after the write operations:
+* [WithBeforeWrite(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#WithBeforeWrite) 
+* [WithAfterWrite(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#WithAfterWrite)
 
 ```go 
 beforeFn := func(_ interface{}) error {	

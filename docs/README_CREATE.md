@@ -2,7 +2,7 @@
 [![Go
 Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
-## Example with one item
+## [RW.Create(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.Create) example with one item
 ```go
 id, err := dbw.NewId("u")
 
@@ -11,14 +11,14 @@ user := TestUser{PublicId: id, Name: "Alice"}
 var rowsAffected int64
 err = rw.Create(ctx, &user, dbw.WithRowsAffected(&rowsAffected))  
 ```
-## Example with multiple items
+## [RW.CreateItems(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.CreateItems) example with multiple items
 ```go
 var rowsAffected int64
 err = rw.CreateItems(ctx,[]interface{}{&user1, &user2}, dbw.WithRowsAffected(&rowsAffected))  
 ```
 
 
-## Upsert (on conflict)
+## [OnConflict](https://pkg.go.dev/github.com/hashicorp/go-dbw#WithOnConflict) upsert example
 
 Upserts via a variety of conflict targets and actions are supported.
 

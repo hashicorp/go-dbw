@@ -2,7 +2,8 @@
 [![Go
 Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
 
-Just some high-level usage highlights to get you started.  Read the godocs for 
+Just some high-level usage highlights to get you started.  Read the [dbw package
+docs](https://pkg.go.dev/github.com/hashicorp/go-dbw) for 
 a complete list of capabilities and their documentation.
 
 ```go
