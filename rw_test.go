@@ -76,7 +76,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		assert.NotEmpty(user.PublicId)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{user.PublicId})
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []interface{}{user.PublicId, 1})
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
 	})
