@@ -67,11 +67,27 @@ func (db *DB) DbType() (typ DbType, rawName string, e error) {
 func (d *DB) Debug(on bool) {
 	if on {
 		// info level in the Gorm domain which maps to a debug level in this domain
-		d.wrapped.Logger = logger.Default.LogMode(logger.Info)
+		d.LogLevel(Info)
 	} else {
 		// the default level in the gorm domain is: error level
-		d.wrapped.Logger = logger.Default.LogMode(logger.Error)
+		d.LogLevel(Error)
 	}
+}
+
+// LogLevel defines a log level
+type LogLevel int
+
+const (
+	Default LogLevel = iota
+	Silent
+	Error
+	Warn
+	Info
+)
+
+// LogLevel will set the logging level for the db
+func (d *DB) LogLevel(l LogLevel) {
+	d.wrapped.Logger = d.wrapped.Logger.LogMode(logger.LogLevel(l))
 }
 
 // SqlDB returns the underlying sql.DB  Note: this makes it possible to do
@@ -109,7 +125,7 @@ func (d *DB) Close(ctx context.Context) error {
 }
 
 // Open a database connection which is long-lived. The options of
-// WithLogger and WithMaxOpenConnections are supported.
+// WithLogger, WithLogLevel and WithMaxOpenConnections are supported.
 //
 // Note: Consider if you need to call Close() on the returned DB.  Typically the
 // answer is no, but there are occasions when it's necessary.  See the sql.DB
@@ -144,8 +160,8 @@ type Dialector interface {
 }
 
 // OpenWith will open a database connection using a Dialector which is
-// long-lived. The options of WithLogger and WithMaxOpenConnections are
-// supported.
+// long-lived. The options of WithLogger, WithLogLevel and
+// WithMaxOpenConnections are supported.
 //
 // Note: Consider if you need to call Close() on the returned DB.  Typically the
 // answer is no, but there are occasions when it's necessary.  See the sql.DB
@@ -164,8 +180,8 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		newLogger := logger.New(
 			getGormLogger(opts.WithLogger),
 			logger.Config{
-				LogLevel: logger.Error, // Log level
-				Colorful: false,        // Disable color
+				LogLevel: logger.LogLevel(opts.withLogLevel), // Log level
+				Colorful: false,                              // Disable color
 			},
 		)
 		db = db.Session(&gorm.Session{Logger: newLogger})

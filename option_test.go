@@ -237,4 +237,17 @@ func Test_getOpts(t *testing.T) {
 		testOpts.WithTable = "tmp_table_name"
 		assert.Equal(opts, testOpts)
 	})
+	t.Run("WithLogLevel", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default
+		opts := GetOpts()
+		testOpts := getDefaultOptions()
+		testOpts.withLogLevel = Error
+		assert.Equal(opts, testOpts)
+
+		opts = GetOpts(WithLogLevel(Warn))
+		testOpts = getDefaultOptions()
+		testOpts.withLogLevel = Warn
+		assert.Equal(opts, testOpts)
+	})
 }

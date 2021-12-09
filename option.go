@@ -101,12 +101,15 @@ type Options struct {
 	// WithTable specifies an option for setting a table name to use for the
 	// operation.
 	WithTable string
+
+	withLogLevel LogLevel
 }
 
 func getDefaultOptions() Options {
 	return Options{
 		WithFieldMaskPaths: []string{},
 		WithNullPaths:      []string{},
+		withLogLevel:       Error,
 	}
 }
 
@@ -256,5 +259,12 @@ func WithReturnRowsAffected(rowsAffected *int64) Option {
 func WithTable(name string) Option {
 	return func(o *Options) {
 		o.WithTable = name
+	}
+}
+
+// WithLogLevel specifies an option for setting the log level
+func WithLogLevel(l LogLevel) Option {
+	return func(o *Options) {
+		o.withLogLevel = l
 	}
 }
