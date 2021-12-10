@@ -63,6 +63,8 @@ func TestDb_Update(t *testing.T) {
 		return errFailedFn
 	}
 
+	testWithTableUser := dbtest.AllocTestUser()
+
 	type args struct {
 		i              *dbtest.TestUser
 		fieldMaskPaths []string
@@ -157,6 +159,44 @@ func TestDb_Update(t *testing.T) {
 			wantEmail:       "",
 			wantPhoneNumber: "updated" + id,
 			wantVersion:     2,
+		},
+		{
+			name: "with-table",
+			args: args{
+				i: &dbtest.TestUser{
+					StoreTestUser: &dbtest.StoreTestUser{
+						Name:        "with-table" + id,
+						Email:       "updated" + id,
+						PhoneNumber: "updated" + id,
+					},
+				},
+				fieldMaskPaths: []string{"Name", "PhoneNumber"},
+				setToNullPaths: []string{"Email"},
+				opt:            []dbw.Option{dbw.WithTable(testWithTableUser.TableName())},
+			},
+			want:            1,
+			wantErr:         false,
+			wantErrMsg:      "",
+			wantName:        "with-table" + id,
+			wantEmail:       "",
+			wantPhoneNumber: "updated" + id,
+		},
+		{
+			name: "with-table-error",
+			args: args{
+				i: &dbtest.TestUser{
+					StoreTestUser: &dbtest.StoreTestUser{
+						Name:        "with-table" + id,
+						Email:       "updated" + id,
+						PhoneNumber: "updated" + id,
+					},
+				},
+				fieldMaskPaths: []string{"Name", "PhoneNumber"},
+				setToNullPaths: []string{"Email"},
+				opt:            []dbw.Option{dbw.WithTable("invalid-table-name")},
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid-table-name",
 		},
 		{
 			name: "simple-with-where-not-found",
@@ -430,7 +470,7 @@ func TestDb_Update(t *testing.T) {
 				}
 				where = fmt.Sprintf("%s and %s is null", where, f)
 			}
-			err = rw.LookupWhere(context.Background(), foundUser, where, tt.args.i.PublicId)
+			err = rw.LookupWhere(context.Background(), foundUser, where, []interface{}{tt.args.i.PublicId})
 			require.NoError(err)
 			assert.Equal(tt.args.i.PublicId, foundUser.PublicId)
 			assert.Equal(tt.wantName, foundUser.Name)

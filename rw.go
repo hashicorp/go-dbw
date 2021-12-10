@@ -200,8 +200,9 @@ func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []inte
 	return strings.Join(clauses, " and "), fieldValues, nil
 }
 
-// LookupWhere will lookup the first resource using a where clause with parameters (it only returns the first one)
-func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args ...interface{}) error {
+// LookupWhere will lookup the first resource using a where clause with
+// parameters (it only returns the first one). Suppports the WithTable option.
+func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -212,7 +213,12 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 	if err := raiseErrorOnHooks(resource); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if err := rw.underlying.wrapped.Where(where, args...).First(resource).Error; err != nil {
+	opts := GetOpts(opt...)
+	db := rw.underlying.wrapped
+	if opts.WithTable != "" {
+		db = db.Table(opts.WithTable)
+	}
+	if err := db.Where(where, args...).First(resource).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
 		}
@@ -225,7 +231,7 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 // clause with parameters. An error will be returned if args are provided without a
 // where clause.
 //
-// Supports the WithLimit option.  If WithLimit < 0, then unlimited results are returned.
+// Supports WithTable and WithLimit options.  If WithLimit < 0, then unlimited results are returned.
 // If WithLimit == 0, then default limits are used for results.
 // Supports the WithOrder and WithDebug options.
 func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
@@ -250,6 +256,9 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	}
 	if opts.WithDebug {
 		db = db.Debug()
+	}
+	if opts.WithTable != "" {
+		db = db.Table(opts.WithTable)
 	}
 	// Perform limiting
 	switch {

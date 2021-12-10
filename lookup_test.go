@@ -52,6 +52,25 @@ func TestDb_LookupBy(t *testing.T) {
 			want:    user,
 		},
 		{
+			name: "with-table",
+			rw:   testRw,
+			args: args{
+				resource: user,
+				opt:      []dbw.Option{dbw.WithTable(user.TableName())},
+			},
+			wantErr: false,
+			want:    user,
+		},
+		{
+			name: "with-table-fail",
+			rw:   testRw,
+			args: args{
+				resource: user,
+				opt:      []dbw.Option{dbw.WithTable("invalid-table-name")},
+			},
+			wantErr: true,
+		},
+		{
 			name: "compond",
 			rw:   testRw,
 			args: args{
@@ -123,7 +142,9 @@ func TestDb_LookupBy(t *testing.T) {
 			err := tt.rw.LookupBy(context.Background(), cp, tt.args.opt...)
 			if tt.wantErr {
 				require.Error(err)
-				assert.ErrorIs(err, tt.wantIsErr)
+				if tt.wantIsErr != nil {
+					assert.ErrorIs(err, tt.wantIsErr)
+				}
 				return
 			}
 			require.NoError(err)

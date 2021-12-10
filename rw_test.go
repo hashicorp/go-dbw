@@ -76,15 +76,33 @@ func TestDb_LookupWhere(t *testing.T) {
 		assert.NotEmpty(user.PublicId)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", user.PublicId)
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []interface{}{user.PublicId, 1})
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
+	})
+	t.Run("with-table", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		w := dbw.New(conn)
+		user, err := dbtest.NewTestUser()
+		require.NoError(err)
+		user.Name = "foo-" + user.PublicId
+		err = w.Create(context.Background(), user, dbw.WithTable(user.TableName()))
+		require.NoError(err)
+		assert.NotEmpty(user.PublicId)
+
+		var foundUser dbtest.TestUser
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{user.PublicId}, dbw.WithTable(user.TableName()))
+		require.NoError(err)
+		assert.Equal(foundUser.PublicId, user.PublicId)
+
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{user.PublicId}, dbw.WithTable("invalid-table-name"))
+		require.Error(err)
 	})
 	t.Run("tx-nil,", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.RW{}
 		var foundUser dbtest.TestUser
-		err := w.LookupWhere(context.Background(), &foundUser, "public_id = ?", 1)
+		err := w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{1})
 		require.Error(err)
 		assert.Equal("dbw.LookupWhere: missing underlying db: invalid parameter", err.Error())
 	})
@@ -95,7 +113,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", id)
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{id})
 		require.Error(err)
 		assert.ErrorIs(err, dbw.ErrRecordNotFound)
 	})
@@ -106,7 +124,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "? = ?", id)
+		err = w.LookupWhere(context.Background(), &foundUser, "? = ?", []interface{}{id})
 		require.Error(err)
 	})
 	t.Run("not-ptr", func(t *testing.T) {
@@ -116,7 +134,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", id)
+		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", []interface{}{id})
 		require.Error(err)
 	})
 	t.Run("hooks", func(t *testing.T) {
@@ -130,7 +148,7 @@ func TestDb_LookupWhere(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				assert, require := assert.New(t), require.New(t)
 				w := dbw.New(conn)
-				err := w.LookupWhere(context.Background(), tt.resource, "public_id = ?", "1")
+				err := w.LookupWhere(context.Background(), tt.resource, "public_id = ?", []interface{}{"1"})
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrInvalidParameter)
 				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
@@ -203,6 +221,29 @@ func TestDb_SearchWhere(t *testing.T) {
 			},
 			wantCnt: 1,
 			wantErr: false,
+		},
+		{
+			name:      "with-table",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: "public_id = ?",
+				arg:   []interface{}{knownUser.PublicId},
+				opt:   []dbw.Option{dbw.WithLimit(3), dbw.WithTable(knownUser.TableName())},
+			},
+			wantCnt: 1,
+			wantErr: false,
+		},
+		{
+			name:      "with-table-fail",
+			rw:        testRw,
+			createCnt: 1,
+			args: args{
+				where: "public_id = ?",
+				arg:   []interface{}{knownUser.PublicId},
+				opt:   []dbw.Option{dbw.WithLimit(3), dbw.WithTable("invalid-table-name")},
+			},
+			wantErr: true,
 		},
 		{
 			name:      "no args",

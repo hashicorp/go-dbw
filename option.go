@@ -97,12 +97,19 @@ type Options struct {
 	// WithRowsAffected specifies an option for returning the rows affected
 	// and typically used with "bulk" write operations.
 	WithRowsAffected *int64
+
+	// WithTable specifies an option for setting a table name to use for the
+	// operation.
+	WithTable string
+
+	withLogLevel LogLevel
 }
 
 func getDefaultOptions() Options {
 	return Options{
 		WithFieldMaskPaths: []string{},
 		WithNullPaths:      []string{},
+		withLogLevel:       Error,
 	}
 }
 
@@ -244,5 +251,20 @@ func WithOnConflict(onConflict *OnConflict) Option {
 func WithReturnRowsAffected(rowsAffected *int64) Option {
 	return func(o *Options) {
 		o.WithRowsAffected = rowsAffected
+	}
+}
+
+// WithTable specifies an option for setting a table name to use for the
+// operation.
+func WithTable(name string) Option {
+	return func(o *Options) {
+		o.WithTable = name
+	}
+}
+
+// WithLogLevel specifies an option for setting the log level
+func WithLogLevel(l LogLevel) Option {
+	return func(o *Options) {
+		o.withLogLevel = l
 	}
 }

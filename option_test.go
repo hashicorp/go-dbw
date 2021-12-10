@@ -224,4 +224,30 @@ func Test_getOpts(t *testing.T) {
 		testOpts.WithMinOpenConnections = 1
 		assert.Equal(opts, testOpts)
 	})
+	t.Run("WithTable", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default
+		opts := GetOpts()
+		testOpts := getDefaultOptions()
+		testOpts.WithTable = ""
+		assert.Equal(opts, testOpts)
+
+		opts = GetOpts(WithTable("tmp_table_name"))
+		testOpts = getDefaultOptions()
+		testOpts.WithTable = "tmp_table_name"
+		assert.Equal(opts, testOpts)
+	})
+	t.Run("WithLogLevel", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default
+		opts := GetOpts()
+		testOpts := getDefaultOptions()
+		testOpts.withLogLevel = Error
+		assert.Equal(opts, testOpts)
+
+		opts = GetOpts(WithLogLevel(Warn))
+		testOpts = getDefaultOptions()
+		testOpts.withLogLevel = Warn
+		assert.Equal(opts, testOpts)
+	})
 }

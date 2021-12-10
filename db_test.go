@@ -185,3 +185,22 @@ func TestDB_Close(t *testing.T) {
 		assert.Error(err)
 	})
 }
+
+func TestDB_LogLevel(t *testing.T) {
+	tests := []struct {
+		name  string
+		level dbw.LogLevel
+	}{
+		{"default", dbw.Default},
+		{"silent", dbw.Silent},
+		{"error", dbw.Error},
+		{"warn", dbw.Warn},
+		{"info", dbw.Info},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, _ := dbw.TestSetup(t)
+			db.LogLevel(tt.level)
+		})
+	}
+}

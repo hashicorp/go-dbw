@@ -18,7 +18,7 @@ type Reader interface {
 	LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error
 
 	// LookupWhere will lookup and return the first resource using a where clause with parameters
-	LookupWhere(ctx context.Context, resource interface{}, where string, args ...interface{}) error
+	LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error
 
 	// SearchWhere will search for all the resources it can find using a where
 	// clause with parameters. Supports the WithLimit option.  If

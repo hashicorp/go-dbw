@@ -56,7 +56,7 @@ func NonCreatableFields() []string {
 
 // Create a resource in the db with options: WithDebug, WithLookup,
 // WithReturnRowsAffected, OnConflict, WithBeforeWrite, WithAfterWrite,
-// WithVersion, and WithWhere.
+// WithVersion, WithTable, and WithWhere.
 //
 // OnConflict specifies alternative actions to take when an insert results in a
 // unique constraint or exclusion constraint error. If WithVersion is used with
@@ -147,7 +147,9 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 	if opts.WithDebug {
 		db = db.Debug()
 	}
-
+	if opts.WithTable != "" {
+		db = db.Table(opts.WithTable)
+	}
 	if opts.WithBeforeWrite != nil {
 		if err := opts.WithBeforeWrite(i); err != nil {
 			return fmt.Errorf("%s: error before write: %w", op, err)
@@ -173,7 +175,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 
 // CreateItems will create multiple items of the same type. Supported options:
 // WithDebug, WithBeforeWrite, WithAfterWrite, WithReturnRowsAffected,
-// OnConflict, WithVersion, and WithWhere. WithLookup is not a supported option.
+// OnConflict, WithVersion, WithTable, and WithWhere. WithLookup is not a supported option.
 func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error {
 	const op = "dbw.CreateItems"
 	if rw.underlying == nil {
@@ -213,6 +215,7 @@ func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ..
 			WithDebug(opts.WithDebug),
 			WithVersion(opts.WithVersion),
 			WithWhere(opts.WithWhereClause, opts.WithWhereClauseArgs...),
+			WithTable(opts.WithTable),
 		); err != nil {
 			return fmt.Errorf("%s: %w", op, err)
 		}
