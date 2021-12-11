@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgconn"
 
-	_ "github.com/jackc/pgx/v4"
+	_ "github.com/jackc/pgx/v4" // required to load postgres drivers
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 
@@ -22,9 +22,14 @@ import (
 type DbType int
 
 const (
+	// UnknownDB is an unknown db type
 	UnknownDB DbType = 0
-	Postgres  DbType = 1
-	Sqlite    DbType = 2
+
+	// Postgres is a postgre db type
+	Postgres DbType = 1
+
+	// Sqlite is a sqlite db type
+	Sqlite DbType = 2
 )
 
 // String provides a string rep of the DbType.
@@ -64,13 +69,13 @@ func (db *DB) DbType() (typ DbType, rawName string, e error) {
 }
 
 // Debug will enable/disable debug info for the connection
-func (d *DB) Debug(on bool) {
+func (db *DB) Debug(on bool) {
 	if on {
 		// info level in the Gorm domain which maps to a debug level in this domain
-		d.LogLevel(Info)
+		db.LogLevel(Info)
 	} else {
 		// the default level in the gorm domain is: error level
-		d.LogLevel(Error)
+		db.LogLevel(Error)
 	}
 }
 
@@ -78,16 +83,25 @@ func (d *DB) Debug(on bool) {
 type LogLevel int
 
 const (
+	// Default specifies the default log level
 	Default LogLevel = iota
+
+	// Silent is the silent log level
 	Silent
+
+	// Error is the error log level
 	Error
+
+	// Warn is the warning log level
 	Warn
+
+	// Info is the info log level
 	Info
 )
 
 // LogLevel will set the logging level for the db
-func (d *DB) LogLevel(l LogLevel) {
-	d.wrapped.Logger = d.wrapped.Logger.LogMode(logger.LogLevel(l))
+func (db *DB) LogLevel(l LogLevel) {
+	db.wrapped.Logger = db.wrapped.Logger.LogMode(logger.LogLevel(l))
 }
 
 // SqlDB returns the underlying sql.DB  Note: this makes it possible to do
@@ -99,12 +113,12 @@ func (d *DB) LogLevel(l LogLevel) {
 // Care should be take when deciding to use this for basic database operations
 // like Exec, Query, etc since these functions are already provided by dbw.RW
 // which provides a layer of encapsulation of the underlying database.
-func (d *DB) SqlDB(_ context.Context) (*sql.DB, error) {
+func (db *DB) SqlDB(_ context.Context) (*sql.DB, error) {
 	const op = "dbw.(DB).SqlDB"
-	if d.wrapped == nil {
+	if db.wrapped == nil {
 		return nil, fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
-	return d.wrapped.DB()
+	return db.wrapped.DB()
 }
 
 // Close the database
@@ -112,12 +126,12 @@ func (d *DB) SqlDB(_ context.Context) (*sql.DB, error) {
 // Note: Consider if you need to call Close() on the returned DB. Typically the
 // answer is no, but there are occasions when it's necessary. See the sql.DB
 // docs for more information.
-func (d *DB) Close(ctx context.Context) error {
+func (db *DB) Close(ctx context.Context) error {
 	const op = "dbw.(DB).Close"
-	if d.wrapped == nil {
+	if db.wrapped == nil {
 		return fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
 	}
-	underlying, err := d.wrapped.DB()
+	underlying, err := db.wrapped.DB()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
@@ -192,7 +206,7 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		}
 		underlyingDB, err := db.DB()
 		if err != nil {
-			return nil, fmt.Errorf("unable retreive db: %w", err)
+			return nil, fmt.Errorf("unable retrieve db: %w", err)
 		}
 		underlyingDB.SetMaxOpenConns(opts.WithMaxOpenConnections)
 	}

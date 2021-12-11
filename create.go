@@ -14,10 +14,17 @@ import (
 type OpType int
 
 const (
+	// UnknownOp is an unknown operaton
 	UnknownOp OpType = 0
-	CreateOp  OpType = 1
-	UpdateOp  OpType = 2
-	DeleteOp  OpType = 3
+
+	// CreateOp is a create operation
+	CreateOp OpType = 1
+
+	// UpdateOp is an update operation
+	UpdateOp OpType = 2
+
+	// DeleteOp is a delete operation
+	DeleteOp OpType = 3
 )
 
 // VetForWriter provides an interface that Create and Update can use to vet the

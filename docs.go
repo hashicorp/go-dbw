@@ -1,5 +1,5 @@
 /*
-dbw is a database wrapper that supports connecting and using any database with a
+Package dbw is a database wrapper that supports connecting and using any database with a
 gorm driver.  It's intent is to completely encapsulate an application's access
 to it's database with the exception of migrations.
 
