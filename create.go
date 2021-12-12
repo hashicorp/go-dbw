@@ -118,16 +118,16 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 			set := make(clause.Set, 0, len(updates))
 			for _, s := range updates {
 				// make sure it's not one of the std immutable columns
-				if contains([]string{"createtime", "publicid"}, strings.ToLower(s.column)) {
-					return fmt.Errorf("%s: cannot do update on conflict for column %s: %w", op, s.column, ErrInvalidParameter)
+				if contains([]string{"createtime", "publicid"}, strings.ToLower(s.Column)) {
+					return fmt.Errorf("%s: cannot do update on conflict for column %s: %w", op, s.Column, ErrInvalidParameter)
 				}
-				switch sv := s.value.(type) {
+				switch sv := s.Value.(type) {
 				case column:
-					set = append(set, sv.toAssignment(s.column))
+					set = append(set, sv.toAssignment(s.Column))
 				case ExprValue:
-					set = append(set, sv.toAssignment(s.column))
+					set = append(set, sv.toAssignment(s.Column))
 				default:
-					set = append(set, rawAssignment(s.column, s.value))
+					set = append(set, rawAssignment(s.Column, s.Value))
 				}
 			}
 			c.DoUpdates = set
