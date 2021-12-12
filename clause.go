@@ -10,8 +10,10 @@ import (
 // ColumnValue defines a column and it's assigned value for a database
 // operation.  See: SetColumnValues(...)
 type ColumnValue struct {
-	column string
-	value  interface{}
+	// Column name
+	Column string
+	// Value is the column's value
+	Value interface{}
 }
 
 // column represents a table column
@@ -37,14 +39,14 @@ func rawAssignment(column string, value interface{}) clause.Assignment {
 // ExprValue encapsulates an expression value for a column assignment.  See
 // Expr(...) to create these values.
 type ExprValue struct {
-	sql  string
-	vars []interface{}
+	Sql  string
+	Vars []interface{}
 }
 
 func (ev *ExprValue) toAssignment(column string) clause.Assignment {
 	return clause.Assignment{
 		Column: clause.Column{Name: column},
-		Value:  gorm.Expr(ev.sql, ev.vars...),
+		Value:  gorm.Expr(ev.Sql, ev.Vars...),
 	}
 }
 
@@ -57,7 +59,7 @@ func (ev *ExprValue) toAssignment(column string) clause.Assignment {
 // Set exp_time column to N seconds from now:
 //	SetColumnValues(map[string]interface{}{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
 func Expr(expr string, args ...interface{}) ExprValue {
-	return ExprValue{sql: expr, vars: args}
+	return ExprValue{Sql: expr, Vars: args}
 }
 
 // SetColumnValues defines a map from column names to values for database
@@ -71,7 +73,7 @@ func SetColumnValues(columnValues map[string]interface{}) []ColumnValue {
 
 	assignments := make([]ColumnValue, len(keys))
 	for idx, key := range keys {
-		assignments[idx] = ColumnValue{column: key, value: columnValues[key]}
+		assignments[idx] = ColumnValue{Column: key, Value: columnValues[key]}
 	}
 	return assignments
 }
@@ -82,8 +84,8 @@ func SetColumns(names []string) []ColumnValue {
 	assignments := make([]ColumnValue, len(names))
 	for idx, name := range names {
 		assignments[idx] = ColumnValue{
-			column: name,
-			value:  column{name: name, table: "excluded"},
+			Column: name,
+			Value:  column{name: name, table: "excluded"},
 		}
 	}
 	return assignments
