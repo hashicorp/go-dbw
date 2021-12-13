@@ -25,7 +25,7 @@ func (rw *RW) Query(_ context.Context, sql string, values []interface{}, _ ...Op
 	return db.Rows()
 }
 
-// Scan rows will scan the rows into the interface
+// ScanRows will scan the rows into the interface
 func (rw *RW) ScanRows(rows *sql.Rows, result interface{}) error {
 	const op = "dbw.ScanRows"
 	if rw.underlying == nil {

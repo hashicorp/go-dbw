@@ -77,11 +77,11 @@ type Options struct {
 	// valid for Open(..) and OpenWith(...)
 	WithLogger hclog.Logger
 
-	// WithMinOpenConnections specifices and optional min open connections for the
+	// WithMinOpenConnections specifies and optional min open connections for the
 	// database.  A value of zero means that there is no min.
 	WithMaxOpenConnections int
 
-	// WithMaxOpenConnections specifices and optional max open connections for the
+	// WithMaxOpenConnections specifies and optional max open connections for the
 	// database.  A value of zero equals unlimited connections
 	WithMinOpenConnections int
 
@@ -213,7 +213,7 @@ func WithLogger(l hclog.Logger) Option {
 	}
 }
 
-// WithMaxOpenConnections specifices and optional max open connections for the
+// WithMaxOpenConnections specifies and optional max open connections for the
 // database.  A value of zero equals unlimited connections
 func WithMaxOpenConnections(max int) Option {
 	return func(o *Options) {
@@ -221,7 +221,7 @@ func WithMaxOpenConnections(max int) Option {
 	}
 }
 
-// WithMinOpenConnections specifices and optional min open connections for the
+// WithMinOpenConnections specifies and optional min open connections for the
 // database.  A value of zero means that there is no min.
 func WithMinOpenConnections(max int) Option {
 	return func(o *Options) {

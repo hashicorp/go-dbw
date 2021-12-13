@@ -24,12 +24,14 @@ func Now() *Timestamp {
 }
 
 // AsTime converts x to a time.Time.
-func (x *Timestamp) AsTime() time.Time {
-	return x.Timestamp.AsTime()
+func (ts *Timestamp) AsTime() time.Time {
+	return ts.Timestamp.AsTime()
 }
 
 var (
+	// NegativeInfinityTS defines a value for postgres -infinity
 	NegativeInfinityTS = time.Date(math.MinInt32, time.January, 1, 0, 0, 0, 0, time.UTC)
+	// PositiveInfinityTS defines a value for postgres infinity
 	PositiveInfinityTS = time.Date(math.MaxInt32, time.December, 31, 23, 59, 59, 1e9-1, time.UTC)
 )
 
