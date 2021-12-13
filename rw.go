@@ -147,7 +147,20 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 		if !contains(mDb.Statement.Schema.DBNames, "version") {
 			return "", nil, fmt.Errorf("%s: %s does not have a version field: %w", op, mDb.Statement.Schema.Table, ErrInvalidParameter)
 		}
-		where = append(where, fmt.Sprintf("%s.version = ?", mDb.Statement.Schema.Table)) // we need to include the table name because of "on conflict" use cases
+		if opts.WithOnConflict != nil {
+			// on conflict clauses requires the version to be qualified with a
+			// table name
+			var tableName string
+			switch {
+			case opts.WithTable != "":
+				tableName = opts.WithTable
+			default:
+				tableName = mDb.Statement.Schema.Table
+			}
+			where = append(where, fmt.Sprintf("%s.version = ?", tableName)) // we need to include the table name because of "on conflict" use cases
+		} else {
+			where = append(where, "version = ?")
+		}
 		args = append(args, opts.WithVersion)
 	}
 	if opts.WithWhereClause != "" {
