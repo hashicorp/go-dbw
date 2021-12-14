@@ -30,7 +30,7 @@ func TestDb_Query(t *testing.T) {
 		})
 		require.NoError(err)
 		require.Equal(1, rowsAffected)
-		rows, err := rw.Query(testCtx, query, []interface{}{"alice", "bob"})
+		rows, err := rw.Query(testCtx, query, []interface{}{"alice", "bob"}, dbw.WithDebug(true))
 		require.NoError(err)
 		defer func() { err := rows.Close(); assert.NoError(err) }()
 		for rows.Next() {

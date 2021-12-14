@@ -12,7 +12,8 @@ import (
 // unique. If the resource implements either ResourcePublicIder or
 // ResourcePrivateIder interface, then they are used as the resource's
 // primary key for lookup.  Otherwise, the resource tags are used to
-// determine it's primary key(s) for lookup.  The WithTable option is supported.
+// determine it's primary key(s) for lookup.  The WithDebug and WithTable
+// options are supported.
 func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ...Option) error {
 	const op = "dbw.LookupById"
 	if rw.underlying == nil {
@@ -32,6 +33,9 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ..
 	db := rw.underlying.wrapped
 	if opts.WithTable != "" {
 		db = db.Table(opts.WithTable)
+	}
+	if opts.WithDebug {
+		db = db.Debug()
 	}
 	if err := db.Where(where, keys...).First(resourceWithIder).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {

@@ -27,7 +27,9 @@ func TestDb_Exec(t *testing.T) {
 			[]interface{}{
 				sql.Named("public_id", id),
 				sql.Named("name", "alice"),
-			})
+			},
+			dbw.WithDebug(true),
+		)
 
 		require.NoError(err)
 		rowsAffected, err := w.Exec(testCtx,
@@ -76,7 +78,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		assert.NotEmpty(user.PublicId)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []interface{}{user.PublicId, 1})
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []interface{}{user.PublicId, 1}, dbw.WithDebug(true))
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
 	})

@@ -42,9 +42,8 @@ func (rw *RW) DB() *DB {
 }
 
 // Exec will execute the sql with the values as parameters. The int returned
-// is the number of rows affected by the sql. No options are currently
-// supported.
-func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, _ ...Option) (int, error) {
+// is the number of rows affected by the sql. The WithDebug option is supported.
+func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
 	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -52,7 +51,12 @@ func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, _ ...Opt
 	if sql == "" {
 		return noRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	db := rw.underlying.wrapped.Exec(sql, values...)
+	opts := GetOpts(opt...)
+	db := rw.underlying.wrapped
+	if opts.WithDebug {
+		db = db.Debug()
+	}
+	db = db.Exec(sql, values...)
 	if db.Error != nil {
 		return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
 	}
@@ -214,7 +218,8 @@ func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []inte
 }
 
 // LookupWhere will lookup the first resource using a where clause with
-// parameters (it only returns the first one). Suppports the WithTable option.
+// parameters (it only returns the first one). Suppports WithDebug, and
+// WithTable options.
 func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
@@ -231,6 +236,9 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 	if opts.WithTable != "" {
 		db = db.Table(opts.WithTable)
 	}
+	if opts.WithDebug {
+		db = db.Debug()
+	}
 	if err := db.Where(where, args...).First(resource).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
@@ -246,7 +254,7 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 //
 // Supports WithTable and WithLimit options.  If WithLimit < 0, then unlimited results are returned.
 // If WithLimit == 0, then default limits are used for results.
-// Supports the WithOrder and WithDebug options.
+// Supports the WithOrder, WithTable, and WithDebug options.
 func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
 	const op = "dbw.SearchWhere"
 	opts := GetOpts(opt...)
