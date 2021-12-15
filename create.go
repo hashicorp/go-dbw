@@ -129,7 +129,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 					return fmt.Errorf("%s: cannot do update on conflict for column %s: %w", op, s.Column, ErrInvalidParameter)
 				}
 				switch sv := s.Value.(type) {
-				case column:
+				case Column:
 					set = append(set, sv.toAssignment(s.Column))
 				case ExprValue:
 					set = append(set, sv.toAssignment(s.Column))

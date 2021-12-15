@@ -16,16 +16,18 @@ type ColumnValue struct {
 	Value interface{}
 }
 
-// column represents a table column
-type column struct {
-	name  string
-	table string
+// Column represents a table Column
+type Column struct {
+	// Name of the column
+	Name string
+	// Table name of the column
+	Table string
 }
 
-func (c *column) toAssignment(column string) clause.Assignment {
+func (c *Column) toAssignment(column string) clause.Assignment {
 	return clause.Assignment{
 		Column: clause.Column{Name: column},
-		Value:  clause.Column{Table: c.table, Name: c.name},
+		Value:  clause.Column{Table: c.Table, Name: c.Name},
 	}
 }
 
@@ -85,7 +87,7 @@ func SetColumns(names []string) []ColumnValue {
 	for idx, name := range names {
 		assignments[idx] = ColumnValue{
 			Column: name,
-			Value:  column{name: name, table: "excluded"},
+			Value:  Column{Name: name, Table: "excluded"},
 		}
 	}
 	return assignments
