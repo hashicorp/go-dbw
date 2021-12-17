@@ -9,8 +9,8 @@ import (
 // Query will run the raw query and return the *sql.Rows results. Query will
 // operate within the context of any ongoing transaction for the Reader.  The
 // caller must close the returned *sql.Rows. Query can/should be used in
-// combination with ScanRows.
-func (rw *RW) Query(_ context.Context, sql string, values []interface{}, _ ...Option) (*sql.Rows, error) {
+// combination with ScanRows. The WithDebug option is supported.
+func (rw *RW) Query(_ context.Context, sql string, values []interface{}, opt ...Option) (*sql.Rows, error) {
 	const op = "dbw.Query"
 	if rw.underlying == nil {
 		return nil, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -18,7 +18,12 @@ func (rw *RW) Query(_ context.Context, sql string, values []interface{}, _ ...Op
 	if sql == "" {
 		return nil, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
-	db := rw.underlying.wrapped.Raw(sql, values...)
+	opts := GetOpts(opt...)
+	db := rw.underlying.wrapped
+	if opts.WithDebug {
+		db = db.Debug()
+	}
+	db = db.Raw(sql, values...)
 	if db.Error != nil {
 		return nil, fmt.Errorf("%s: %w", op, db.Error)
 	}

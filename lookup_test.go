@@ -62,6 +62,16 @@ func TestDb_LookupBy(t *testing.T) {
 			want:    user,
 		},
 		{
+			name: "with-debug",
+			rw:   testRw,
+			args: args{
+				resource: user,
+				opt:      []dbw.Option{dbw.WithDebug(true)},
+			},
+			wantErr: false,
+			want:    user,
+		},
+		{
 			name: "with-table-fail",
 			rw:   testRw,
 			args: args{
