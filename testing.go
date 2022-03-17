@@ -2,6 +2,7 @@ package dbw
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"strings"
@@ -17,7 +18,7 @@ import (
 // TestSetup is typically called before starting a test and will setup the
 // database for the test (initialize the database one-time). Do not close the
 // returned db.  Supported test options: WithDebug, WithTestDialect,
-// WithTestDatabaseUrl, and WithMigration
+// WithTestDatabaseUrl, WithTestMigration and WithTestMigrationUsingDB.
 func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 	require := require.New(t)
 	var url string
@@ -97,11 +98,43 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		db.Debug(true)
 	}
 
-	if opts.withTestMigration != nil {
+	// we're only going to run one set of migrations.  Either one of the
+	// migration functions passed in as an option or the default
+	// TestCreateTables(...)
+	switch {
+	case opts.withTestMigration != nil:
 		err = opts.withTestMigration(ctx, opts.withDialect, url)
 		require.NoError(err)
+
+	case opts.withTestMigrationUsingDb != nil:
+		var rawDB *sql.DB
+		switch opts.withDialect {
+		case Sqlite.String():
+			// we need to special case handle sqlite because we may want to run
+			// the migration on an in-memory database that isn't shared
+			// "file::memory:" or ":memory:" so we have to be sure that we don't
+			// open a new connection, which would create a new in-memory db vs
+			// using the existing one already opened in this function a few
+			// lines above with: db, err := Open(dbType, url)
+			// see: https://www.sqlite.org/inmemorydb.html
+			//
+			// luckily, the gorm sqlite ConnPool is the existing opened *sql.DB,
+			// so we can just run the migration on that conn
+			var ok bool
+			rawDB, ok = db.wrapped.ConnPool.(*sql.DB)
+			require.True(ok)
+		default:
+			var err error
+			rawDB, err = db.wrapped.DB()
+			if err != nil {
+				require.NoError(err)
+			}
+		}
+		err = opts.withTestMigrationUsingDb(ctx, rawDB)
+		require.NoError(err)
+	default:
+		TestCreateTables(t, db)
 	}
-	TestCreateTables(t, db)
 	return db, url
 }
 
@@ -119,10 +152,11 @@ type TestOption func(*testOptions)
 
 // options = how options are represented
 type testOptions struct {
-	withDialect         string
-	withTestDatabaseUrl string
-	withTestMigration   func(ctx context.Context, dialect, url string) error
-	withTestDebug       bool
+	withDialect              string
+	withTestDatabaseUrl      string
+	withTestMigration        func(ctx context.Context, dialect, url string) error
+	withTestMigrationUsingDb func(ctx context.Context, db *sql.DB) error
+	withTestDebug            bool
 }
 
 func getDefaultTestOptions() testOptions {
@@ -141,6 +175,15 @@ func WithTestDialect(dialect string) TestOption {
 func WithTestMigration(migrationFn func(ctx context.Context, dialect, url string) error) TestOption {
 	return func(o *testOptions) {
 		o.withTestMigration = migrationFn
+	}
+}
+
+// WithTestMigrationUsingDB provides a way to specify an option func which runs a
+// required database migration to initialize the database using an existing open
+// sql.DB
+func WithTestMigrationUsingDB(migrationFn func(ctx context.Context, db *sql.DB) error) TestOption {
+	return func(o *testOptions) {
+		o.withTestMigrationUsingDb = migrationFn
 	}
 }
 
