@@ -122,7 +122,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 			// so we can just run the migration on that conn
 			var ok bool
 			rawDB, ok = db.wrapped.ConnPool.(*sql.DB)
-			require.True(ok)
+			require.True(ok, "expected the gorm ConnPool to be an *sql.DB")
 		default:
 			var err error
 			rawDB, err = db.wrapped.DB()

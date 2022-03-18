@@ -105,7 +105,7 @@ func Test_CreateDropTestTables(t *testing.T) {
 	})
 }
 
-// testUser is require since we can't import dbtest as it creates a circular dep
+// testUser is required since we can't import dbtest as it creates a circular dep
 type testUser struct {
 	PublicId    string `gorm:"primaryKey;default:null"`
 	Name        string `gorm:"default:null"`
