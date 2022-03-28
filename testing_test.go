@@ -3,6 +3,7 @@ package dbw
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -95,6 +96,24 @@ func Test_TestSetup(t *testing.T) {
 			assert.NotEmpty(url)
 		})
 	}
+}
+
+func Test_TestSetupWithMock(t *testing.T) {
+	assert := assert.New(t)
+	testCtx := context.Background()
+
+	publicId, err := base62.Random(20)
+	require.NoError(t, err)
+	user := &testUser{
+		PublicId: publicId,
+	}
+
+	db, mock := TestSetupWithMock(t)
+	rw := New(db)
+	mock.ExpectQuery(`SELECT`).WillReturnError(errors.New("failed-lookup"))
+
+	err = rw.Create(testCtx, &user)
+	assert.Error(err)
 }
 
 func Test_CreateDropTestTables(t *testing.T) {

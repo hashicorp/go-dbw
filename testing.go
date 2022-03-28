@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/xo/dburl"
+	pgDriver "gorm.io/driver/postgres"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -138,6 +140,21 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		TestCreateTables(t, db)
 	}
 	return db, url
+}
+
+// TestSetupWithMock will return a test DB and an associated Sqlmock which can
+// be used to mock out the db responses.
+func TestSetupWithMock(t *testing.T) (*DB, sqlmock.Sqlmock) {
+	t.Helper()
+	require := require.New(t)
+	db, mock, err := sqlmock.New()
+	require.NoError(err)
+	require.NoError(err)
+	dbw, err := OpenWith(pgDriver.New(pgDriver.Config{
+		Conn: db,
+	}))
+	require.NoError(err)
+	return dbw, mock
 }
 
 // getTestOpts - iterate the inbound TestOptions and return a struct

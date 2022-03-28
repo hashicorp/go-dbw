@@ -3,6 +3,7 @@ module github.com/hashicorp/go-dbw
 go 1.17
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/bufbuild/buf v0.56.0
 	github.com/favadi/protoc-go-inject-tag v1.3.0
 	github.com/hashicorp/go-hclog v1.0.0
