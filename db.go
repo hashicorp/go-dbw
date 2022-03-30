@@ -162,7 +162,16 @@ func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) {
 	default:
 		return nil, fmt.Errorf("unable to open %s database type", dbType)
 	}
-	return openDialector(dialect, opt...)
+	db, err := openDialector(dialect, opt...)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	if dbType == Sqlite {
+		if _, err := New(db).Exec(context.Background(), "PRAGMA foreign_keys=ON", nil); err != nil {
+			return nil, fmt.Errorf("%s: unable to enable sqlite foreign keys: %w", op, err)
+		}
+	}
+	return db, nil
 }
 
 // Dialector provides a set of functions the database dialect must satisfy to
