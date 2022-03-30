@@ -2,6 +2,7 @@ package dbw_test
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -111,6 +112,19 @@ func TestOpen(t *testing.T) {
 				return
 			}
 			require.NoError(err)
+			rw := dbw.New(got)
+			rows, err := rw.Query(context.Background(), "PRAGMA foreign_keys", nil)
+			require.NoError(err)
+			require.True(rows.Next())
+			type foo struct {
+			}
+			f := struct {
+				ForeignKeys int
+			}{}
+			err = rw.ScanRows(rows, &f)
+			require.NoError(err)
+			require.Equal(1, f.ForeignKeys)
+			fmt.Println(f)
 		})
 	}
 }
