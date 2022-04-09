@@ -137,6 +137,9 @@ func raiseErrorOnHooks(i interface{}) error {
 
 // IsTx returns true if there's an existing transaction in progress
 func (rw *RW) IsTx() bool {
+	if rw.underlying == nil {
+		return false
+	}
 	switch rw.underlying.wrapped.Statement.ConnPool.(type) {
 	case gorm.TxBeginner, gorm.ConnPoolBeginner:
 		return false
