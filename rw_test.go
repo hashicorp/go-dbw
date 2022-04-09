@@ -352,6 +352,21 @@ func TestDb_SearchWhere(t *testing.T) {
 	})
 }
 
+func TestRW_IsTx(t *testing.T) {
+	t.Parallel()
+	testCtx := context.Background()
+	conn, _ := dbw.TestSetup(t)
+	testRw := dbw.New(conn)
+	assert, require := assert.New(t), require.New(t)
+
+	assert.False(testRw.IsTx())
+
+	tx, err := testRw.Begin(testCtx)
+	require.NoError(err)
+	assert.NotNil(tx)
+	assert.True(tx.IsTx())
+}
+
 func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {
 	t.Helper()
 	require := require.New(t)

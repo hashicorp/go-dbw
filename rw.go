@@ -135,6 +135,16 @@ func raiseErrorOnHooks(i interface{}) error {
 	return nil
 }
 
+// IsTx returns true if there's an existing transaction in progress
+func (rw *RW) IsTx() bool {
+	switch rw.underlying.wrapped.Statement.ConnPool.(type) {
+	case gorm.TxBeginner, gorm.ConnPoolBeginner:
+		return false
+	default:
+		return true
+	}
+}
+
 func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Options) (string, []interface{}, error) {
 	const op = "dbw.whereClausesFromOpts"
 	var where []string
