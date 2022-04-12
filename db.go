@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgconn"
@@ -197,6 +198,11 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 	db, err := gorm.Open(dialect, &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to open database: %w", err)
+	}
+	if strings.ToLower(dialect.Name()) == "sqlite" {
+		if err := db.Exec("PRAGMA foreign_keys=ON", nil).Error; err != nil {
+			return nil, fmt.Errorf("unable to enable sqlite foreign keys: %w", err)
+		}
 	}
 	opts := GetOpts(opt...)
 	if opts.WithLogger != nil {
