@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
@@ -23,6 +24,20 @@ func TestDb_DoTx(t *testing.T) {
 		}
 		return false
 	}
+	t.Run("timed-out", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		timeoutCtx, timeoutCancel := context.WithTimeout(testCtx, 1*time.Microsecond)
+		defer timeoutCancel()
+
+		w := dbw.New(conn)
+		attempts := 0
+		_, err := w.DoTx(timeoutCtx, retryOnFn, 2, dbw.ConstBackoff{DurationMs: 1}, func(dbw.Reader, dbw.Writer) error {
+			attempts += 1
+			return retryErr
+		})
+		require.Error(err)
+		assert.Contains(err.Error(), "dbw.DoTx: context deadline exceeded")
+	})
 	t.Run("valid-with-10-retries", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.New(conn)

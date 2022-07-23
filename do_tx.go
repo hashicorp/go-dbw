@@ -43,8 +43,12 @@ func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, 
 				d := backOff.Duration(attempts)
 				info.Retries++
 				info.Backoff = info.Backoff + d
-				time.Sleep(d)
-				continue
+				select {
+				case <-ctx.Done():
+					return info, fmt.Errorf("%s: cancelled: %w", op, err)
+				case <-time.After(d):
+					continue
+				}
 			}
 			return info, fmt.Errorf("%s: %w", op, err)
 		}
