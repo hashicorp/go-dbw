@@ -39,7 +39,7 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 			return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithVersion != nil || opts.WithWhereClause != "" {
 		where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
 		if err != nil {

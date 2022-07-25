@@ -43,7 +43,7 @@ func (rw *RW) DB() *DB {
 
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. The WithDebug option is supported.
-func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
+func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
 	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -52,7 +52,7 @@ func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...O
 		return noRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
 	opts := GetOpts(opt...)
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithDebug {
 		db = db.Debug()
 	}
@@ -246,9 +246,9 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 }
 
 // LookupWhere will lookup the first resource using a where clause with
-// parameters (it only returns the first one). Suppports WithDebug, and
+// parameters (it only returns the first one). Supports WithDebug, and
 // WithTable options.
-func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
+func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -260,7 +260,7 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithTable != "" {
 		db = db.Table(opts.WithTable)
 	}

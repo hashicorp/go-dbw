@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +37,15 @@ func TestDb_DoTx(t *testing.T) {
 			return retryErr
 		})
 		require.Error(err)
-		assert.Contains(err.Error(), "dbw.DoTx: context deadline exceeded")
+		const (
+			cancelledMsg = "dbw.DoTx: cancelled"
+			deadlineMsg  = "dbw.DoTx: context deadline exceeded"
+		)
+		switch {
+		case strings.Contains(err.Error(), cancelledMsg), strings.Contains(err.Error(), deadlineMsg):
+		default:
+			assert.Failf("error does not contain %q or %q", cancelledMsg, deadlineMsg)
+		}
 	})
 	t.Run("valid-with-10-retries", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)

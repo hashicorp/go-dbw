@@ -3,7 +3,6 @@ package dbw
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"gorm.io/gorm"
 )
@@ -30,7 +29,7 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ..
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithTable != "" {
 		db = db.Table(opts.WithTable)
 	}
