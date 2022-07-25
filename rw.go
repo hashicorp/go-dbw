@@ -43,7 +43,7 @@ func (rw *RW) DB() *DB {
 
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. The WithDebug option is supported.
-func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
+func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
 	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -52,7 +52,7 @@ func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...O
 		return noRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
 	}
 	opts := GetOpts(opt...)
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithDebug {
 		db = db.Debug()
 	}
@@ -63,7 +63,7 @@ func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...O
 	return int(db.RowsAffected), nil
 }
 
-func (rw *RW) primaryFieldsAreZero(_ context.Context, i interface{}) ([]string, bool, error) {
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
 	const op = "dbw.primaryFieldsAreZero"
 	var fieldNames []string
 	tx := rw.underlying.wrapped.Model(i)
@@ -72,7 +72,7 @@ func (rw *RW) primaryFieldsAreZero(_ context.Context, i interface{}) ([]string, 
 	}
 	for _, f := range tx.Statement.Schema.PrimaryFields {
 		if f.PrimaryKey {
-			if _, isZero := f.ValueOf(reflect.ValueOf(i)); isZero {
+			if _, isZero := f.ValueOf(ctx, reflect.ValueOf(i)); isZero {
 				fieldNames = append(fieldNames, f.Name)
 			}
 		}
@@ -98,6 +98,21 @@ func contains(ss []string, t string) bool {
 		}
 	}
 	return false
+}
+
+func validateResourcesInterface(resources interface{}) error {
+	const op = "dbw.validateResourcesInterface"
+	vo := reflect.ValueOf(resources)
+	if vo.Kind() != reflect.Ptr {
+		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	}
+	e := vo.Elem()
+	if e.Kind() == reflect.Slice {
+		if e.Type().Elem().Kind() != reflect.Ptr {
+			return fmt.Errorf("%s: interface parameter is a slice, but the elements of the slice are not pointers: %w", op, ErrInvalidParameter)
+		}
+	}
+	return nil
 }
 
 func raiseErrorOnHooks(i interface{}) error {
@@ -186,7 +201,7 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 	return strings.Join(where, " and "), args, nil
 }
 
-func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []interface{}, error) {
+func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
 	var fieldValues []interface{}
@@ -211,7 +226,7 @@ func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []inte
 		v := reflect.ValueOf(i)
 		for _, f := range tx.Statement.Schema.PrimaryFields {
 			if f.PrimaryKey {
-				val, isZero := f.ValueOf(v)
+				val, isZero := f.ValueOf(ctx, v)
 				if isZero {
 					return "", nil, fmt.Errorf("%s: primary field %s is zero: %w", op, f.Name, ErrInvalidParameter)
 				}
@@ -231,21 +246,21 @@ func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []inte
 }
 
 // LookupWhere will lookup the first resource using a where clause with
-// parameters (it only returns the first one). Suppports WithDebug, and
+// parameters (it only returns the first one). Supports WithDebug, and
 // WithTable options.
-func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
+func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
-	if reflect.ValueOf(resource).Kind() != reflect.Ptr {
-		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	if err := validateResourcesInterface(resource); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	if err := raiseErrorOnHooks(resource); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	opts := GetOpts(opt...)
-	db := rw.underlying.wrapped
+	db := rw.underlying.wrapped.WithContext(ctx)
 	if opts.WithTable != "" {
 		db = db.Table(opts.WithTable)
 	}
@@ -280,8 +295,8 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	if err := raiseErrorOnHooks(resources); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if reflect.ValueOf(resources).Kind() != reflect.Ptr {
-		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	if err := validateResourcesInterface(resources); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	var err error
 	db := rw.underlying.wrapped.WithContext(ctx)

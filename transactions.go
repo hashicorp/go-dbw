@@ -19,18 +19,20 @@ func (rw *RW) Begin(ctx context.Context) (*RW, error) {
 }
 
 // Rollback will rollback the current transaction
-func (rw *RW) Rollback(_ context.Context) error {
+func (rw *RW) Rollback(ctx context.Context) error {
 	const op = "dbw.Rollback"
-	if err := rw.underlying.wrapped.Rollback().Error; err != nil {
+	db := rw.underlying.wrapped.WithContext(ctx)
+	if err := db.Rollback().Error; err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
 }
 
 // Commit will commit a transaction
-func (rw *RW) Commit(_ context.Context) error {
+func (rw *RW) Commit(ctx context.Context) error {
 	const op = "dbw.Commit"
-	if err := rw.underlying.wrapped.Commit().Error; err != nil {
+	db := rw.underlying.wrapped.WithContext(ctx)
+	if err := db.Commit().Error; err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil

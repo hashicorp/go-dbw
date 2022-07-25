@@ -71,12 +71,12 @@ type Writer interface {
 	// Rollback will rollback the current transaction.  NOTE: consider using
 	// DoTx(...) with a TxHandler since it supports a better interface for
 	// managing transactions  via a TxHandler.
-	Rollback(_ context.Context) error
+	Rollback(ctx context.Context) error
 
 	// Commit will commit a transaction.  NOTE: consider using DoTx(...) with a
 	// TxHandler since it supports a better interface for managing transactions
 	// via a TxHandler.
-	Commit(_ context.Context) error
+	Commit(ctx context.Context) error
 }
 
 // RetryInfo provides information on the retries of a transaction
