@@ -30,7 +30,7 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 	}
 	reflectValue := reflect.Indirect(reflect.ValueOf(i))
 	for _, pf := range mDb.Statement.Schema.PrimaryFields {
-		if _, isZero := pf.ValueOf(reflectValue); isZero {
+		if _, isZero := pf.ValueOf(ctx, reflectValue); isZero {
 			return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
 		}
 	}

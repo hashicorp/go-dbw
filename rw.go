@@ -63,7 +63,7 @@ func (rw *RW) Exec(_ context.Context, sql string, values []interface{}, opt ...O
 	return int(db.RowsAffected), nil
 }
 
-func (rw *RW) primaryFieldsAreZero(_ context.Context, i interface{}) ([]string, bool, error) {
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
 	const op = "dbw.primaryFieldsAreZero"
 	var fieldNames []string
 	tx := rw.underlying.wrapped.Model(i)
@@ -72,7 +72,7 @@ func (rw *RW) primaryFieldsAreZero(_ context.Context, i interface{}) ([]string, 
 	}
 	for _, f := range tx.Statement.Schema.PrimaryFields {
 		if f.PrimaryKey {
-			if _, isZero := f.ValueOf(reflect.ValueOf(i)); isZero {
+			if _, isZero := f.ValueOf(ctx, reflect.ValueOf(i)); isZero {
 				fieldNames = append(fieldNames, f.Name)
 			}
 		}
@@ -201,7 +201,7 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 	return strings.Join(where, " and "), args, nil
 }
 
-func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []interface{}, error) {
+func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
 	var fieldValues []interface{}
@@ -226,7 +226,7 @@ func (rw *RW) primaryKeysWhere(_ context.Context, i interface{}) (string, []inte
 		v := reflect.ValueOf(i)
 		for _, f := range tx.Statement.Schema.PrimaryFields {
 			if f.PrimaryKey {
-				val, isZero := f.ValueOf(v)
+				val, isZero := f.ValueOf(ctx, v)
 				if isZero {
 					return "", nil, fmt.Errorf("%s: primary field %s is zero: %w", op, f.Name, ErrInvalidParameter)
 				}
