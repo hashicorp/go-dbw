@@ -22,8 +22,8 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ..
 	if err := raiseErrorOnHooks(resourceWithIder); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if reflect.ValueOf(resourceWithIder).Kind() != reflect.Ptr {
-		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	if err := validateResourcesInterface(resourceWithIder); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	where, keys, err := rw.primaryKeysWhere(ctx, resourceWithIder)
 	if err != nil {

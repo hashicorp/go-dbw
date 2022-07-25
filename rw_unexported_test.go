@@ -65,3 +65,52 @@ func TestRW_whereClausesFromOpts(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateResourcesInterface(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name            string
+		resources       interface{}
+		wantErr         bool
+		wantErrContains string
+	}{
+		{
+			name:            "not-ptr-to-slice",
+			resources:       []*string{},
+			wantErrContains: "interface parameter must to be a pointer:",
+		},
+		{
+			name:            "not-ptr",
+			resources:       "string",
+			wantErrContains: "interface parameter must to be a pointer:",
+		},
+		{
+			name:            "not-slice-of-ptrs",
+			resources:       &[]string{},
+			wantErrContains: "interface parameter is a slice, but the elements of the slice are not pointers",
+		},
+		{
+			name:      "success-ptr-to-slice-of-ptrs",
+			resources: &[]*string{},
+		},
+		{
+			name: "success-ptr",
+			resources: func() interface{} {
+				s := "s"
+				return &s
+			}(),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := assert.New(t)
+			err := validateResourcesInterface(tc.resources)
+			if tc.wantErr {
+				assert.Error(err)
+				if tc.wantErrContains != "" {
+					assert.Contains(err.Error(), tc.wantErrContains)
+				}
+			}
+		})
+	}
+}

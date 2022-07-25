@@ -100,6 +100,21 @@ func contains(ss []string, t string) bool {
 	return false
 }
 
+func validateResourcesInterface(resources interface{}) error {
+	const op = "dbw.validateResourcesInterface"
+	vo := reflect.ValueOf(resources)
+	if vo.Kind() != reflect.Ptr {
+		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	}
+	e := vo.Elem()
+	if e.Kind() == reflect.Slice {
+		if e.Type().Elem().Kind() != reflect.Ptr {
+			return fmt.Errorf("%s: interface parameter is a slice, but the elements of the slice are not pointers: %w", op, ErrInvalidParameter)
+		}
+	}
+	return nil
+}
+
 func raiseErrorOnHooks(i interface{}) error {
 	const op = "dbw.raiseErrorOnHooks"
 	v := i
@@ -238,8 +253,8 @@ func (rw *RW) LookupWhere(_ context.Context, resource interface{}, where string,
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
 	}
-	if reflect.ValueOf(resource).Kind() != reflect.Ptr {
-		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	if err := validateResourcesInterface(resource); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	if err := raiseErrorOnHooks(resource); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
@@ -280,8 +295,8 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	if err := raiseErrorOnHooks(resources); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
-	if reflect.ValueOf(resources).Kind() != reflect.Ptr {
-		return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+	if err := validateResourcesInterface(resources); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	var err error
 	db := rw.underlying.wrapped.WithContext(ctx)
