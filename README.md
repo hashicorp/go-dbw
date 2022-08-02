@@ -43,5 +43,5 @@ your application's domain.
 * [Queries](./docs/README_QUERY.md)
 * [Transactions](./docs/README_TX.md)
 * [Hooks](./docs/README_HOOKS.md)
-* [Optimistic locking for write operations](./docs/README_LOCKs.md)
+* [Optimistic locking for write operations](./docs/README_LOCKS.md)
 * [Debug output](./docs/README_DEBUG.md)
