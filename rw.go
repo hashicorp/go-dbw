@@ -330,3 +330,7 @@ func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where stri
 	}
 	return nil
 }
+
+func (rw *RW) Dialect() (_ DbType, rawName string, _ error) {
+	return rw.underlying.DbType()
+}

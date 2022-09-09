@@ -77,6 +77,9 @@ type Writer interface {
 	// TxHandler since it supports a better interface for managing transactions
 	// via a TxHandler.
 	Commit(ctx context.Context) error
+
+	// Dialect returns the dialect and raw connection name of the underlying database.
+	Dialect() (_ DbType, rawName string, _ error)
 }
 
 // RetryInfo provides information on the retries of a transaction

@@ -367,6 +367,20 @@ func TestRW_IsTx(t *testing.T) {
 	assert.True(tx.IsTx())
 }
 
+func TestDialect(t *testing.T) {
+	t.Parallel()
+	conn, _ := dbw.TestSetup(t)
+	testRw := dbw.New(conn)
+	assert, require := assert.New(t), require.New(t)
+
+	gotTyp, gotRawName, err := testRw.Dialect()
+	require.NoError(err)
+	typ, rawName, err := conn.DbType()
+	require.NoError(err)
+	assert.Equal(typ, gotTyp)
+	assert.Equal(rawName, gotRawName)
+}
+
 func testUser(t *testing.T, rw *dbw.RW, name, email, phoneNumber string) *dbtest.TestUser {
 	t.Helper()
 	require := require.New(t)
