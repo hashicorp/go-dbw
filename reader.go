@@ -34,6 +34,9 @@ type Reader interface {
 
 	// ScanRows will scan sql rows into the interface provided
 	ScanRows(rows *sql.Rows, result interface{}) error
+
+	// Dialect returns the dialect and raw connection name of the underlying database.
+	Dialect() (_ DbType, rawName string, _ error)
 }
 
 // ResourcePublicIder defines an interface that LookupByPublicId() and
