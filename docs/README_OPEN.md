@@ -34,7 +34,7 @@ func main() {
 import(
     "database/sql"
     "github.com/hashicorp/go-dbw"
-     "gorm.io/gorm"
+    "gorm.io/gorm"
 )
 
 func main() {
