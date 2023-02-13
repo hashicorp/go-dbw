@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 /*
 Package dbw is a database wrapper that supports connecting and using any database with a
 gorm driver.  It's intent is to completely encapsulate an application's access
