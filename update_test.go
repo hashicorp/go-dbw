@@ -38,6 +38,14 @@ func TestDb_UpdateUnsetField(t *testing.T) {
 	assert.Equal(1, cnt)
 	assert.Equal("", updatedTu.Email)
 	assert.Equal("updated", updatedTu.Name)
+
+	found := dbtest.AllocTestUser()
+	found.PublicId = tu.PublicId
+	found.Email = "ignore"
+	err = rw.LookupByPublicId(testCtx, &found)
+	require.NoError(err)
+	assert.Equal("", found.Email)
+	assert.Equal("updated", found.Name)
 }
 
 func TestDb_Update(t *testing.T) {
