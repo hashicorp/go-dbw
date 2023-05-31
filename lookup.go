@@ -39,6 +39,7 @@ func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ..
 	if opts.WithDebug {
 		db = db.Debug()
 	}
+	rw.clearDefaultNullResourceFields(ctx, resourceWithIder)
 	if err := db.Where(where, keys...).First(resourceWithIder).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return fmt.Errorf("%s: %w", op, ErrRecordNotFound)

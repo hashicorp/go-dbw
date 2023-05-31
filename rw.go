@@ -204,6 +204,37 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 	return strings.Join(where, " and "), args, nil
 }
 
+// clearDefaultNullResourceFields will clear fields in the resource which are
+// defaulted to a null value.  This addresses the unfixed issue in gorm:
+// https://github.com/go-gorm/gorm/issues/6351
+func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{}) error {
+	const op = "dbw.ClearResourceFields"
+	stmt := rw.underlying.wrapped.Model(i).Statement
+	if err := stmt.Parse(i); err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+	v := reflect.ValueOf(i)
+	for _, f := range stmt.Schema.Fields {
+		switch {
+		case f.PrimaryKey:
+			// seems a bit redundant, with the test for null, but it's very
+			// important to not clear the primary fields, so we'll make an
+			// explicit test
+			continue
+		case !strings.EqualFold(f.DefaultValue, "null"):
+			continue
+		default:
+			_, isZero := f.ValueOf(ctx, v)
+			if isZero {
+				continue
+			}
+			if err := f.Set(stmt.Context, v, f.DefaultValueInterface); err != nil {
+				return fmt.Errorf("%s: unable to set value of non-zero field: %w", op, err)
+			}
+		}
+	}
+	return nil
+}
 func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string

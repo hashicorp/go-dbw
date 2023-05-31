@@ -7,11 +7,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestDb_LookupBy(t *testing.T) {
@@ -53,6 +55,20 @@ func TestDb_LookupBy(t *testing.T) {
 			},
 			wantErr: false,
 			want:    user,
+		},
+		{
+			name: "with-null-values-set",
+			rw:   testRw,
+			args: args{
+				resource: &dbtest.TestScooter{
+					StoreTestScooter: &dbtest.StoreTestScooter{
+						PrivateId: scooter.GetPrivateId(),
+						Model:     "model",
+						Mpg:       10,
+					},
+				},
+			},
+			want: scooter,
 		},
 		{
 			name: "with-table",
@@ -161,7 +177,7 @@ func TestDb_LookupBy(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			assert.True(proto.Equal(tt.want, cp.(proto.Message)))
+			assert.Empty(cmp.Diff(tt.want, cp.(proto.Message), protocmp.Transform()))
 		})
 	}
 	t.Run("not-ptr", func(t *testing.T) {
