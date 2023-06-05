@@ -221,6 +221,9 @@ func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{})
 			// important to not clear the primary fields, so we'll make an
 			// explicit test
 			continue
+		case !f.Updatable:
+			// well, based on the gorm tags it's a read-only field, so we're done.
+			continue
 		case !strings.EqualFold(f.DefaultValue, "null"):
 			continue
 		default:

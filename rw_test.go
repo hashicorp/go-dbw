@@ -411,13 +411,14 @@ func testCar(t *testing.T, rw *dbw.RW) *dbtest.TestCar {
 	return r
 }
 
-func testScooter(t *testing.T, rw *dbw.RW, model string, mpg int32) *dbtest.TestScooter {
+func testScooter(t *testing.T, rw *dbw.RW, model string, mpg int32, readOnlyField string) *dbtest.TestScooter {
 	t.Helper()
 	require := require.New(t)
 	r, err := dbtest.NewTestScooter()
 	require.NoError(err)
 	r.Model = model
 	r.Mpg = mpg
+	r.ReadOnlyField = readOnlyField
 	if rw != nil {
 		err = rw.Create(context.Background(), r)
 		require.NoError(err)
