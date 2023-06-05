@@ -123,4 +123,7 @@ message StoreTestScooter {
 
   // @inject_tag: `gorm:"default:null"`
   int32 mpg = 5;
+
+  // @inject_tag: `gorm:"-"`
+  string read_only_field = 6;
 }

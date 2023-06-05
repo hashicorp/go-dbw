@@ -20,11 +20,12 @@ func TestDb_LookupBy(t *testing.T) {
 	t.Parallel()
 	db, _ := dbw.TestSetup(t)
 	testRw := dbw.New(db)
-	scooter := testScooter(t, testRw, "", 0)
+	scooter := testScooter(t, testRw, "", 0, "")
 	user := testUser(t, testRw, "", "", "")
 	car := testCar(t, testRw)
 	rental := testRental(t, testRw, user.PublicId, car.PublicId)
-	// scooterAccessory := testScooterAccessory(t, db, scooter.Id, accessory.AccessoryId)
+
+	testScooterWithROField := testScooter(t, testRw, "", 0, "read-only")
 
 	type args struct {
 		resource interface{}
@@ -69,6 +70,14 @@ func TestDb_LookupBy(t *testing.T) {
 				},
 			},
 			want: scooter,
+		},
+		{
+			name: "with-read-only-field-set",
+			rw:   testRw,
+			args: args{
+				resource: testScooterWithROField,
+			},
+			want: testScooterWithROField,
 		},
 		{
 			name: "with-table",
