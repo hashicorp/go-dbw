@@ -10,11 +10,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/glebarez/sqlite"
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/sqlite"
 )
 
 func TestOpen(t *testing.T) {
