@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/bufbuild/buf v0.56.0
 	github.com/favadi/protoc-go-inject-tag v1.3.0
+	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-hclog v1.4.0
 	github.com/hashicorp/go-secure-stdlib/base62 v0.1.2
 	github.com/jackc/pgconn v1.14.0
@@ -15,7 +16,7 @@ require (
 	github.com/xo/dburl v0.13.0
 	golang.org/x/crypto v0.7.0
 	golang.org/x/tools v0.6.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.28.1
 	gorm.io/driver/postgres v1.5.0
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.25.1
@@ -34,7 +35,6 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -73,7 +73,7 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
-	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
-	google.golang.org/grpc v1.41.0-dev.0.20210907181116-2f3355d2244e // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/grpc v1.53.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
