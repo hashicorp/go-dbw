@@ -86,7 +86,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		require.Truef(len(namesSegs) > 0, "couldn't determine db name from URL")
 		namesSegs[0] = tmpDbName
 		u.Path = strings.Join(namesSegs, "?")
-		url, err = dburl.GenPostgres(u)
+		url, _, err = dburl.GenPostgres(u)
 		require.NoError(err)
 	}
 
