@@ -10,7 +10,6 @@ _test
 *.iws
 
 ### Logs ###
-*.log
 logs/
 
 ### direnv ###
