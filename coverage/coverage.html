@@ -1,0 +1,3005 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>go-dbw: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/hashicorp/go-dbw/backoff.go (100.0%)</option>
+				
+				<option value="file1">github.com/hashicorp/go-dbw/clause.go (100.0%)</option>
+				
+				<option value="file2">github.com/hashicorp/go-dbw/common.go (97.6%)</option>
+				
+				<option value="file3">github.com/hashicorp/go-dbw/create.go (93.8%)</option>
+				
+				<option value="file4">github.com/hashicorp/go-dbw/db.go (91.8%)</option>
+				
+				<option value="file5">github.com/hashicorp/go-dbw/delete.go (97.0%)</option>
+				
+				<option value="file6">github.com/hashicorp/go-dbw/do_tx.go (87.5%)</option>
+				
+				<option value="file7">github.com/hashicorp/go-dbw/id.go (92.9%)</option>
+				
+				<option value="file8">github.com/hashicorp/go-dbw/lookup.go (97.0%)</option>
+				
+				<option value="file9">github.com/hashicorp/go-dbw/option.go (100.0%)</option>
+				
+				<option value="file10">github.com/hashicorp/go-dbw/query.go (95.2%)</option>
+				
+				<option value="file11">github.com/hashicorp/go-dbw/rw.go (93.0%)</option>
+				
+				<option value="file12">github.com/hashicorp/go-dbw/testing.go (66.4%)</option>
+				
+				<option value="file13">github.com/hashicorp/go-dbw/transactions.go (93.8%)</option>
+				
+				<option value="file14">github.com/hashicorp/go-dbw/update.go (91.9%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "math"
+        "math/rand"
+        "time"
+)
+
+// Backoff defines an interface for providing a back off for retrying
+// transactions. See DoTx(...)
+type Backoff interface {
+        Duration(attemptNumber uint) time.Duration
+}
+
+// ConstBackoff defines a constant backoff for retrying transactions. See
+// DoTx(...)
+type ConstBackoff struct {
+        DurationMs time.Duration
+}
+
+// Duration is the constant backoff duration based on the retry attempt
+func (b ConstBackoff) Duration(attempt uint) time.Duration <span class="cov8" title="1">{
+        return time.Millisecond * time.Duration(b.DurationMs)
+}</span>
+
+// ExpBackoff defines an exponential backoff for retrying transactions. See DoTx(...)
+type ExpBackoff struct {
+        testRand float64
+}
+
+// Duration is the exponential backoff duration based on the retry attempt
+func (b ExpBackoff) Duration(attempt uint) time.Duration <span class="cov8" title="1">{
+        var r float64
+        switch </span>{
+        case b.testRand &gt; 0:<span class="cov8" title="1">
+                r = b.testRand</span>
+        default:<span class="cov8" title="1">
+                r = rand.Float64()</span>
+        }
+        <span class="cov8" title="1">return time.Millisecond * time.Duration(math.Exp2(float64(attempt))*5*(r+0.5))</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "sort"
+
+        "gorm.io/gorm"
+        "gorm.io/gorm/clause"
+)
+
+// ColumnValue defines a column and it's assigned value for a database
+// operation.  See: SetColumnValues(...)
+type ColumnValue struct {
+        // Column name
+        Column string
+        // Value is the column's value
+        Value interface{}
+}
+
+// Column represents a table Column
+type Column struct {
+        // Name of the column
+        Name string
+        // Table name of the column
+        Table string
+}
+
+func (c *Column) toAssignment(column string) clause.Assignment <span class="cov8" title="1">{
+        return clause.Assignment{
+                Column: clause.Column{Name: column},
+                Value:  clause.Column{Table: c.Table, Name: c.Name},
+        }
+}</span>
+
+func rawAssignment(column string, value interface{}) clause.Assignment <span class="cov8" title="1">{
+        return clause.Assignment{
+                Column: clause.Column{Name: column},
+                Value:  value,
+        }
+}</span>
+
+// ExprValue encapsulates an expression value for a column assignment.  See
+// Expr(...) to create these values.
+type ExprValue struct {
+        Sql  string
+        Vars []interface{}
+}
+
+func (ev *ExprValue) toAssignment(column string) clause.Assignment <span class="cov8" title="1">{
+        return clause.Assignment{
+                Column: clause.Column{Name: column},
+                Value:  gorm.Expr(ev.Sql, ev.Vars...),
+        }
+}</span>
+
+// Expr creates an expression value (ExprValue) which can be used when setting
+// column values for database operations. See: Expr(...)
+//
+// Set name column to null example:
+//        SetColumnValues(map[string]interface{}{"name": Expr("NULL")})
+//
+// Set exp_time column to N seconds from now:
+//        SetColumnValues(map[string]interface{}{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
+func Expr(expr string, args ...interface{}) ExprValue <span class="cov8" title="1">{
+        return ExprValue{Sql: expr, Vars: args}
+}</span>
+
+// SetColumnValues defines a map from column names to values for database
+// operations.
+func SetColumnValues(columnValues map[string]interface{}) []ColumnValue <span class="cov8" title="1">{
+        keys := make([]string, 0, len(columnValues))
+        for key := range columnValues </span><span class="cov8" title="1">{
+                keys = append(keys, key)
+        }</span>
+        <span class="cov8" title="1">sort.Strings(keys)
+
+        assignments := make([]ColumnValue, len(keys))
+        for idx, key := range keys </span><span class="cov8" title="1">{
+                assignments[idx] = ColumnValue{Column: key, Value: columnValues[key]}
+        }</span>
+        <span class="cov8" title="1">return assignments</span>
+}
+
+// SetColumns defines a list of column (names) to update using the set of
+// proposed insert columns during an on conflict update.
+func SetColumns(names []string) []ColumnValue <span class="cov8" title="1">{
+        assignments := make([]ColumnValue, len(names))
+        for idx, name := range names </span><span class="cov8" title="1">{
+                assignments[idx] = ColumnValue{
+                        Column: name,
+                        Value:  Column{Name: name, Table: "excluded"},
+                }
+        }</span>
+        <span class="cov8" title="1">return assignments</span>
+}
+
+// OnConflict specifies how to handle alternative actions to take when an insert
+// results in a unique constraint or exclusion constraint error.
+type OnConflict struct {
+
+        // Target specifies what conflict you want to define a policy for.  This can
+        // be any one of these:
+        //        Columns: the name of a specific column or columns
+        //  Constraint: the name of a unique constraint
+        Target interface{}
+
+        // Action specifies the action to take on conflict. This can be any one of
+        // these:
+        //        DoNothing: leaves the conflicting record as-is
+        //  UpdateAll: updates all the columns of the conflicting record using the resource's data
+        //  []ColumnValue: update a set of columns of the conflicting record using the set of assignments
+        Action interface{}
+}
+
+// Constraint defines database constraint name
+type Constraint string
+
+// Columns defines a set of column names
+type Columns []string
+
+// DoNothing defines an "on conflict" action of doing nothing
+type DoNothing bool
+
+// UpdateAll defines an "on conflict" action of updating all columns using the
+// proposed insert column values
+type UpdateAll bool
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "fmt"
+        "reflect"
+        "strings"
+
+        "gorm.io/gorm"
+)
+
+// UpdateFields will create a map[string]interface of the update values to be
+// sent to the db.  The map keys will be the field names for the fields to be
+// updated.  The caller provided fieldMaskPaths and setToNullPaths must not
+// intersect.  fieldMaskPaths and setToNullPaths cannot both be zero len.
+func UpdateFields(i interface{}, fieldMaskPaths []string, setToNullPaths []string) (map[string]interface{}, error) <span class="cov8" title="1">{
+        const op = "dbw.UpdateFields"
+        if i == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: interface is missing: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if fieldMaskPaths == nil </span><span class="cov8" title="1">{
+                fieldMaskPaths = []string{}
+        }</span>
+        <span class="cov8" title="1">if setToNullPaths == nil </span><span class="cov8" title="1">{
+                setToNullPaths = []string{}
+        }</span>
+        <span class="cov8" title="1">if len(fieldMaskPaths) == 0 &amp;&amp; len(setToNullPaths) == 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are zero len: %w", op, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">inter, maskPaths, nullPaths, err := Intersection(fieldMaskPaths, setToNullPaths)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if len(inter) != 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: fieldMashPaths and setToNullPaths cannot intersect: %w", op, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">updateFields := map[string]interface{}{} // case sensitive update fields to values
+
+        found := map[string]struct{}{} // we need something to keep track of found fields (case insensitive)
+
+        val := reflect.Indirect(reflect.ValueOf(i))
+        structTyp := val.Type()
+        for i := 0; i &lt; structTyp.NumField(); i++ </span><span class="cov8" title="1">{
+                if f, ok := maskPaths[strings.ToUpper(structTyp.Field(i).Name)]; ok </span><span class="cov8" title="1">{
+                        updateFields[f] = val.Field(i).Interface()
+                        found[strings.ToUpper(f)] = struct{}{}
+                        continue</span>
+                }
+                <span class="cov8" title="1">if f, ok := nullPaths[strings.ToUpper(structTyp.Field(i).Name)]; ok </span><span class="cov8" title="1">{
+                        updateFields[f] = gorm.Expr("NULL")
+                        found[strings.ToUpper(f)] = struct{}{}
+                        continue</span>
+                }
+                <span class="cov8" title="1">kind := structTyp.Field(i).Type.Kind()
+                if kind == reflect.Struct || kind == reflect.Ptr </span><span class="cov8" title="1">{
+                        embType := structTyp.Field(i).Type
+                        // check if the embedded field is exported via CanInterface()
+                        if val.Field(i).CanInterface() </span><span class="cov8" title="1">{
+                                embVal := reflect.Indirect(reflect.ValueOf(val.Field(i).Interface()))
+                                // if it's a ptr to a struct, then we need a few more bits before proceeding.
+                                if kind == reflect.Ptr </span><span class="cov8" title="1">{
+                                        embVal = val.Field(i).Elem()
+                                        if !embVal.IsValid() </span><span class="cov8" title="1">{
+                                                continue</span>
+                                        }
+                                        <span class="cov8" title="1">embType = embVal.Type()
+                                        if embType.Kind() != reflect.Struct </span><span class="cov0" title="0">{
+                                                continue</span>
+                                        }
+                                }
+                                <span class="cov8" title="1">for embFieldNum := 0; embFieldNum &lt; embType.NumField(); embFieldNum++ </span><span class="cov8" title="1">{
+                                        if f, ok := maskPaths[strings.ToUpper(embType.Field(embFieldNum).Name)]; ok </span><span class="cov8" title="1">{
+                                                updateFields[f] = embVal.Field(embFieldNum).Interface()
+                                                found[strings.ToUpper(f)] = struct{}{}
+                                        }</span>
+                                        <span class="cov8" title="1">if f, ok := nullPaths[strings.ToUpper(embType.Field(embFieldNum).Name)]; ok </span><span class="cov8" title="1">{
+                                                updateFields[f] = gorm.Expr("NULL")
+                                                found[strings.ToUpper(f)] = struct{}{}
+                                        }</span>
+                                }
+                                <span class="cov8" title="1">continue</span>
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">if missing := findMissingPaths(setToNullPaths, found); len(missing) != 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: null paths not found in resource: %s: %w", op, missing, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">if missing := findMissingPaths(fieldMaskPaths, found); len(missing) != 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: field mask paths not found in resource: %s: %w", op, missing, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">return updateFields, nil</span>
+}
+
+func findMissingPaths(paths []string, foundPaths map[string]struct{}) []string <span class="cov8" title="1">{
+        notFound := []string{}
+        for _, f := range paths </span><span class="cov8" title="1">{
+                if _, ok := foundPaths[strings.ToUpper(f)]; !ok </span><span class="cov8" title="1">{
+                        notFound = append(notFound, f)
+                }</span>
+        }
+        <span class="cov8" title="1">return notFound</span>
+}
+
+// Intersection is a case-insensitive search for intersecting values.  Returns
+// []string of the Intersection with values in lowercase, and map[string]string
+// of the original av and bv, with the key set to uppercase and value set to the
+// original
+func Intersection(av, bv []string) ([]string, map[string]string, map[string]string, error) <span class="cov8" title="1">{
+        const op = "dbw.Intersection"
+        if av == nil </span><span class="cov8" title="1">{
+                return nil, nil, nil, fmt.Errorf("%s: av is missing: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if bv == nil </span><span class="cov8" title="1">{
+                return nil, nil, nil, fmt.Errorf("%s: bv is missing: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if len(av) == 0 &amp;&amp; len(bv) == 0 </span><span class="cov8" title="1">{
+                return []string{}, map[string]string{}, map[string]string{}, nil
+        }</span>
+        <span class="cov8" title="1">s := []string{}
+        ah := map[string]string{}
+        bh := map[string]string{}
+
+        for i := 0; i &lt; len(av); i++ </span><span class="cov8" title="1">{
+                ah[strings.ToUpper(av[i])] = av[i]
+        }</span>
+        <span class="cov8" title="1">for i := 0; i &lt; len(bv); i++ </span><span class="cov8" title="1">{
+                k := strings.ToUpper(bv[i])
+                bh[k] = bv[i]
+                if _, found := ah[k]; found </span><span class="cov8" title="1">{
+                        s = append(s, strings.ToLower(bh[k]))
+                }</span>
+        }
+        <span class="cov8" title="1">return s, ah, bh, nil</span>
+}
+
+// BuildUpdatePaths takes a map of field names to field values, field masks,
+// fields allowed to be zero value, and returns both a list of field names to
+// update and a list of field names that should be set to null.
+func BuildUpdatePaths(fieldValues map[string]interface{}, fieldMask []string, allowZeroFields []string) (masks []string, nulls []string) <span class="cov8" title="1">{
+        for f, v := range fieldValues </span><span class="cov8" title="1">{
+                if !contains(fieldMask, f) </span><span class="cov8" title="1">{
+                        continue</span>
+                }
+                <span class="cov8" title="1">switch </span>{
+                case isZero(v) &amp;&amp; !contains(allowZeroFields, f):<span class="cov8" title="1">
+                        nulls = append(nulls, f)</span>
+                default:<span class="cov8" title="1">
+                        masks = append(masks, f)</span>
+                }
+        }
+        <span class="cov8" title="1">return masks, nulls</span>
+}
+
+func isZero(i interface{}) bool <span class="cov8" title="1">{
+        return i == nil || reflect.DeepEqual(i, reflect.Zero(reflect.TypeOf(i)).Interface())
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+        "reflect"
+        "strings"
+        "sync/atomic"
+
+        "gorm.io/gorm/clause"
+)
+
+// OpType defines a set of database operation types
+type OpType int
+
+const (
+        // UnknownOp is an unknown operaton
+        UnknownOp OpType = 0
+
+        // CreateOp is a create operation
+        CreateOp OpType = 1
+
+        // UpdateOp is an update operation
+        UpdateOp OpType = 2
+
+        // DeleteOp is a delete operation
+        DeleteOp OpType = 3
+)
+
+// VetForWriter provides an interface that Create and Update can use to vet the
+// resource before before writing it to the db.  For optType == UpdateOp,
+// options WithFieldMaskPath and WithNullPaths are supported.  For optType ==
+// CreateOp, no options are supported
+type VetForWriter interface {
+        VetForWrite(ctx context.Context, r Reader, opType OpType, opt ...Option) error
+}
+
+var nonCreateFields atomic.Value
+
+// InitNonCreatableFields sets the fields which are not setable using
+// via RW.Create(...)
+func InitNonCreatableFields(fields []string) <span class="cov8" title="1">{
+        m := make(map[string]struct{}, len(fields))
+        for _, f := range fields </span><span class="cov8" title="1">{
+                m[f] = struct{}{}
+        }</span>
+        <span class="cov8" title="1">nonCreateFields.Store(m)</span>
+}
+
+// NonCreatableFields returns the current set of fields which are not setable using
+// via RW.Create(...)
+func NonCreatableFields() []string <span class="cov8" title="1">{
+        m := nonCreateFields.Load()
+        if m == nil </span><span class="cov8" title="1">{
+                return []string{}
+        }</span>
+        <span class="cov8" title="1">fields := make([]string, 0, len(m.(map[string]struct{})))
+        for f := range m.(map[string]struct{}) </span><span class="cov8" title="1">{
+                fields = append(fields, f)
+        }</span>
+        <span class="cov8" title="1">return fields</span>
+}
+
+// Create a resource in the db with options: WithDebug, WithLookup,
+// WithReturnRowsAffected, OnConflict, WithBeforeWrite, WithAfterWrite,
+// WithVersion, WithTable, and WithWhere.
+//
+// OnConflict specifies alternative actions to take when an insert results in a
+// unique constraint or exclusion constraint error. If WithVersion is used with
+// OnConflict, then the update for on conflict will include the version number,
+// which basically makes the update use optimistic locking and the update will
+// only succeed if the existing rows version matches the WithVersion option.
+// Zero is not a valid value for the WithVersion option and will return an
+// error. WithWhere allows specifying an additional constraint on the on
+// conflict operation in addition to the on conflict target policy (columns or
+// constraint).
+func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.Create"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if isNil(i) </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(i); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+
+        // these fields should be nil, since they are not writeable and we want the
+        // db to manage them
+        setFieldsToNil(i, NonCreatableFields())
+
+        if !opts.WithSkipVetForWrite </span><span class="cov8" title="1">{
+                if vetter, ok := i.(VetForWriter); ok </span><span class="cov8" title="1">{
+                        if err := vetter.VetForWrite(ctx, rw, CreateOp); err != nil </span><span class="cov8" title="1">{
+                                return fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                }
+        }
+
+        <span class="cov8" title="1">db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithOnConflict != nil </span><span class="cov8" title="1">{
+                c := clause.OnConflict{}
+                switch opts.WithOnConflict.Target.(type) </span>{
+                case Constraint:<span class="cov0" title="0">
+                        c.OnConstraint = string(opts.WithOnConflict.Target.(Constraint))</span>
+                case Columns:<span class="cov8" title="1">
+                        columns := make([]clause.Column, 0, len(opts.WithOnConflict.Target.(Columns)))
+                        for _, name := range opts.WithOnConflict.Target.(Columns) </span><span class="cov8" title="1">{
+                                columns = append(columns, clause.Column{Name: name})
+                        }</span>
+                        <span class="cov8" title="1">c.Columns = columns</span>
+                default:<span class="cov8" title="1">
+                        return fmt.Errorf("%s: invalid conflict target %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Target), ErrInvalidParameter)</span>
+                }
+
+                <span class="cov8" title="1">switch opts.WithOnConflict.Action.(type) </span>{
+                case DoNothing:<span class="cov8" title="1">
+                        c.DoNothing = true</span>
+                case UpdateAll:<span class="cov0" title="0">
+                        c.UpdateAll = true</span>
+                case []ColumnValue:<span class="cov8" title="1">
+                        updates := opts.WithOnConflict.Action.([]ColumnValue)
+                        set := make(clause.Set, 0, len(updates))
+                        for _, s := range updates </span><span class="cov8" title="1">{
+                                // make sure it's not one of the std immutable columns
+                                if contains([]string{"createtime", "publicid"}, strings.ToLower(s.Column)) </span><span class="cov0" title="0">{
+                                        return fmt.Errorf("%s: cannot do update on conflict for column %s: %w", op, s.Column, ErrInvalidParameter)
+                                }</span>
+                                <span class="cov8" title="1">switch sv := s.Value.(type) </span>{
+                                case Column:<span class="cov8" title="1">
+                                        set = append(set, sv.toAssignment(s.Column))</span>
+                                case ExprValue:<span class="cov8" title="1">
+                                        set = append(set, sv.toAssignment(s.Column))</span>
+                                default:<span class="cov8" title="1">
+                                        set = append(set, rawAssignment(s.Column, s.Value))</span>
+                                }
+                        }
+                        <span class="cov8" title="1">c.DoUpdates = set</span>
+                default:<span class="cov8" title="1">
+                        return fmt.Errorf("%s: invalid conflict action %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Action), ErrInvalidParameter)</span>
+                }
+                <span class="cov8" title="1">if opts.WithVersion != nil || opts.WithWhereClause != "" </span><span class="cov8" title="1">{
+                        where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                        <span class="cov8" title="1">whereConditions := db.Statement.BuildCondition(where, args...)
+                        c.Where = clause.Where{Exprs: whereConditions}</span>
+                }
+                <span class="cov8" title="1">db = db.Clauses(c)</span>
+        }
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov0" title="0">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(i); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">tx := db.Create(i)
+        if tx.Error != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: create failed: %w", op, tx.Error)
+        }</span>
+        <span class="cov8" title="1">if opts.WithRowsAffected != nil </span><span class="cov8" title="1">{
+                *opts.WithRowsAffected = tx.RowsAffected
+        }</span>
+        <span class="cov8" title="1">if tx.RowsAffected &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithAfterWrite(i, int(tx.RowsAffected)); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if err := rw.lookupAfterWrite(ctx, i, opt...); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// CreateItems will create multiple items of the same type. Supported options:
+// WithDebug, WithBeforeWrite, WithAfterWrite, WithReturnRowsAffected,
+// OnConflict, WithVersion, WithTable, and WithWhere. WithLookup is not a supported option.
+func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.CreateItems"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if len(createItems) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing interfaces: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(createItems); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        if opts.WithLookup </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
+        }</span>
+        // verify that createItems are all the same type.
+        <span class="cov8" title="1">var foundType reflect.Type
+        for i, v := range createItems </span><span class="cov8" title="1">{
+                if i == 0 </span><span class="cov8" title="1">{
+                        foundType = reflect.TypeOf(v)
+                }</span>
+                <span class="cov8" title="1">currentType := reflect.TypeOf(v)
+                if foundType != currentType </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: create items contains disparate types. item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
+                }</span>
+        }
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(createItems); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">var rowsAffected int64
+        for _, item := range createItems </span><span class="cov8" title="1">{
+                if err := rw.Create(ctx, item,
+                        WithOnConflict(opts.WithOnConflict),
+                        WithReturnRowsAffected(&amp;rowsAffected),
+                        WithDebug(opts.WithDebug),
+                        WithVersion(opts.WithVersion),
+                        WithWhere(opts.WithWhereClause, opts.WithWhereClauseArgs...),
+                        WithTable(opts.WithTable),
+                ); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if opts.WithRowsAffected != nil </span><span class="cov8" title="1">{
+                *opts.WithRowsAffected = rowsAffected
+        }</span>
+        <span class="cov8" title="1">if opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithAfterWrite(createItems, int(rowsAffected)); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func setFieldsToNil(i interface{}, fieldNames []string) <span class="cov8" title="1">{
+        // Note: error cases are not handled
+        _ = Clear(i, fieldNames, 2)
+}</span>
+
+// Clear sets fields in the value pointed to by i to their zero value.
+// Clear descends i to depth clearing fields at each level. i must be a
+// pointer to a struct. Cycles in i are not detected.
+//
+// A depth of 2 will change i and i's children. A depth of 1 will change i
+// but no children of i. A depth of 0 will return with no changes to i.
+func Clear(i interface{}, fields []string, depth int) error <span class="cov8" title="1">{
+        const op = "dbw.Clear"
+        if len(fields) == 0 || depth == 0 </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">fm := make(map[string]bool)
+        for _, f := range fields </span><span class="cov8" title="1">{
+                fm[f] = true
+        }</span>
+
+        <span class="cov8" title="1">v := reflect.ValueOf(i)
+
+        switch v.Kind() </span>{
+        case reflect.Ptr:<span class="cov8" title="1">
+                if v.IsNil() || v.Elem().Kind() != reflect.Struct </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">clear(v, fm, depth)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("%s: %w", op, ErrInvalidParameter)</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func clear(v reflect.Value, fields map[string]bool, depth int) <span class="cov8" title="1">{
+        if depth == 0 </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">depth--
+
+        switch v.Kind() </span>{
+        case reflect.Ptr:<span class="cov8" title="1">
+                clear(v.Elem(), fields, depth+1)</span>
+        case reflect.Struct:<span class="cov8" title="1">
+                typeOfT := v.Type()
+                for i := 0; i &lt; v.NumField(); i++ </span><span class="cov8" title="1">{
+                        f := v.Field(i)
+                        if ok := fields[typeOfT.Field(i).Name]; ok </span><span class="cov8" title="1">{
+                                if f.IsValid() &amp;&amp; f.CanSet() </span><span class="cov8" title="1">{
+                                        f.Set(reflect.Zero(f.Type()))
+                                }</span>
+                                <span class="cov8" title="1">continue</span>
+                        }
+                        <span class="cov8" title="1">clear(f, fields, depth)</span>
+                }
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "strings"
+
+        "github.com/hashicorp/go-hclog"
+        "github.com/jackc/pgconn"
+
+        _ "github.com/jackc/pgx/v4" // required to load postgres drivers
+        "gorm.io/driver/postgres"
+        "gorm.io/driver/sqlite"
+
+        "gorm.io/gorm"
+        "gorm.io/gorm/logger"
+)
+
+// DbType defines a database type.  It's not an exhaustive list of database
+// types which can be used by the dbw package, since you can always use
+// OpenWith(...) to connect to KnownDB types.
+type DbType int
+
+const (
+        // UnknownDB is an unknown db type
+        UnknownDB DbType = 0
+
+        // Postgres is a postgre db type
+        Postgres DbType = 1
+
+        // Sqlite is a sqlite db type
+        Sqlite DbType = 2
+)
+
+// String provides a string rep of the DbType.
+func (db DbType) String() string <span class="cov8" title="1">{
+        return [...]string{
+                "unknown",
+                "postgres",
+                "sqlite",
+        }[db]
+}</span>
+
+// StringToDbType provides a string to type conversion.  If the type is known,
+// then UnknownDB with and error is returned.
+func StringToDbType(dialect string) (DbType, error) <span class="cov8" title="1">{
+        switch dialect </span>{
+        case "postgres":<span class="cov8" title="1">
+                return Postgres, nil</span>
+        case "sqlite":<span class="cov8" title="1">
+                return Sqlite, nil</span>
+        default:<span class="cov8" title="1">
+                return UnknownDB, fmt.Errorf("%s is an unknown dialect", dialect)</span>
+        }
+}
+
+// DB is a wrapper around whatever is providing the interface for database
+// operations (typically an ORM).  DB uses database/sql to maintain connection
+// pool.
+type DB struct {
+        wrapped *gorm.DB
+}
+
+// DbType will return the DbType and raw name of the connection type
+func (db *DB) DbType() (typ DbType, rawName string, e error) <span class="cov8" title="1">{
+        rawName = db.wrapped.Dialector.Name()
+        typ, _ = StringToDbType(rawName)
+        return typ, rawName, nil
+}</span>
+
+// Debug will enable/disable debug info for the connection
+func (db *DB) Debug(on bool) <span class="cov8" title="1">{
+        if on </span><span class="cov8" title="1">{
+                // info level in the Gorm domain which maps to a debug level in this domain
+                db.LogLevel(Info)
+        }</span> else<span class="cov8" title="1"> {
+                // the default level in the gorm domain is: error level
+                db.LogLevel(Error)
+        }</span>
+}
+
+// LogLevel defines a log level
+type LogLevel int
+
+const (
+        // Default specifies the default log level
+        Default LogLevel = iota
+
+        // Silent is the silent log level
+        Silent
+
+        // Error is the error log level
+        Error
+
+        // Warn is the warning log level
+        Warn
+
+        // Info is the info log level
+        Info
+)
+
+// LogLevel will set the logging level for the db
+func (db *DB) LogLevel(l LogLevel) <span class="cov8" title="1">{
+        db.wrapped.Logger = db.wrapped.Logger.LogMode(logger.LogLevel(l))
+}</span>
+
+// SqlDB returns the underlying sql.DB  Note: this makes it possible to do
+// things like set database/sql connection options like SetMaxIdleConns. If
+// you're simply setting max/min connections then you should use the
+// WithMinOpenConnections and WithMaxOpenConnections options when
+// "opening" the database.
+//
+// Care should be take when deciding to use this for basic database operations
+// like Exec, Query, etc since these functions are already provided by dbw.RW
+// which provides a layer of encapsulation of the underlying database.
+func (db *DB) SqlDB(_ context.Context) (*sql.DB, error) <span class="cov8" title="1">{
+        const op = "dbw.(DB).SqlDB"
+        if db.wrapped == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">return db.wrapped.DB()</span>
+}
+
+// Close the database
+//
+// Note: Consider if you need to call Close() on the returned DB. Typically the
+// answer is no, but there are occasions when it's necessary. See the sql.DB
+// docs for more information.
+func (db *DB) Close(ctx context.Context) error <span class="cov8" title="1">{
+        const op = "dbw.(DB).Close"
+        if db.wrapped == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying database: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">underlying, err := db.wrapped.DB()
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return underlying.Close()</span>
+}
+
+// Open a database connection which is long-lived. The options of
+// WithLogger, WithLogLevel and WithMaxOpenConnections are supported.
+//
+// Note: Consider if you need to call Close() on the returned DB.  Typically the
+// answer is no, but there are occasions when it's necessary.  See the sql.DB
+// docs for more information.
+func Open(dbType DbType, connectionUrl string, opt ...Option) (*DB, error) <span class="cov8" title="1">{
+        const op = "dbw.Open"
+        if connectionUrl == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: missing connection url: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">var dialect gorm.Dialector
+        switch dbType </span>{
+        case Postgres:<span class="cov0" title="0">
+                dialect = postgres.New(postgres.Config{
+                        DSN: connectionUrl,
+                },
+                )</span>
+        case Sqlite:<span class="cov8" title="1">
+                dialect = sqlite.Open(connectionUrl)</span>
+
+        default:<span class="cov8" title="1">
+                return nil, fmt.Errorf("unable to open %s database type", dbType)</span>
+        }
+        <span class="cov8" title="1">db, err := openDialector(dialect, opt...)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if dbType == Sqlite </span><span class="cov8" title="1">{
+                if _, err := New(db).Exec(context.Background(), "PRAGMA foreign_keys=ON", nil); err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("%s: unable to enable sqlite foreign keys: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">return db, nil</span>
+}
+
+// Dialector provides a set of functions the database dialect must satisfy to
+// be used with OpenWith(...)
+// It's a simple wrapper of the gorm.Dialector and provides the ability to open
+// any support gorm dialect driver.
+type Dialector interface {
+        gorm.Dialector
+}
+
+// OpenWith will open a database connection using a Dialector which is
+// long-lived. The options of WithLogger, WithLogLevel and
+// WithMaxOpenConnections are supported.
+//
+// Note: Consider if you need to call Close() on the returned DB.  Typically the
+// answer is no, but there are occasions when it's necessary.  See the sql.DB
+// docs for more information.
+func OpenWith(dialector Dialector, opt ...Option) (*DB, error) <span class="cov8" title="1">{
+        return openDialector(dialector, opt...)
+}</span>
+
+func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) <span class="cov8" title="1">{
+        db, err := gorm.Open(dialect, &amp;gorm.Config{})
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to open database: %w", err)
+        }</span>
+        <span class="cov8" title="1">if strings.ToLower(dialect.Name()) == "sqlite" </span><span class="cov8" title="1">{
+                if err := db.Exec("PRAGMA foreign_keys=ON", nil).Error; err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unable to enable sqlite foreign keys: %w", err)
+                }</span>
+        }
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        if opts.WithLogger != nil </span><span class="cov8" title="1">{
+                newLogger := logger.New(
+                        getGormLogger(opts.WithLogger),
+                        logger.Config{
+                                LogLevel: logger.LogLevel(opts.withLogLevel), // Log level
+                                Colorful: false,                              // Disable color
+                        },
+                )
+                db = db.Session(&amp;gorm.Session{Logger: newLogger})
+        }</span>
+        <span class="cov8" title="1">if opts.WithMaxOpenConnections &gt; 0 </span><span class="cov8" title="1">{
+                if opts.WithMinOpenConnections &gt; 0 &amp;&amp; (opts.WithMaxOpenConnections &lt; opts.WithMinOpenConnections) </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("unable to create db object with dialect %s: %s", dialect, fmt.Sprintf("max_open_connections must be unlimited by setting 0 or at least %d", opts.WithMinOpenConnections))
+                }</span>
+                <span class="cov8" title="1">underlyingDB, err := db.DB()
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unable retrieve db: %w", err)
+                }</span>
+                <span class="cov8" title="1">underlyingDB.SetMaxOpenConns(opts.WithMaxOpenConnections)</span>
+        }
+        <span class="cov8" title="1">return &amp;DB{wrapped: db}, nil</span>
+}
+
+type gormLogger struct {
+        logger hclog.Logger
+}
+
+func (g gormLogger) Printf(_ string, values ...interface{}) <span class="cov8" title="1">{
+        if len(values) &gt; 1 </span><span class="cov8" title="1">{
+                switch values[1].(type) </span>{
+                case *pgconn.PgError:<span class="cov8" title="1">
+                        g.logger.Trace("error from database adapter", "location", values[0], "error", values[1])</span>
+                }
+        }
+}
+
+func getGormLogger(log hclog.Logger) gormLogger <span class="cov8" title="1">{
+        return gormLogger{logger: log}
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+        "reflect"
+)
+
+// Delete a resource in the db with options: WithWhere, WithDebug, WithTable,
+// and WithVersion. WithWhere and WithVersion allows specifying a additional
+// constraints on the operation in addition to the PKs. Delete returns the
+// number of rows deleted and any errors.
+func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+        const op = "dbw.Delete"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if isNil(i) </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(i); err != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+
+        mDb := rw.underlying.wrapped.Model(i)
+        err := mDb.Statement.Parse(i)
+        if err == nil &amp;&amp; mDb.Statement.Schema == nil </span><span class="cov0" title="0">{
+                return noRowsAffected, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
+        }</span>
+        <span class="cov8" title="1">reflectValue := reflect.Indirect(reflect.ValueOf(i))
+        for _, pf := range mDb.Statement.Schema.PrimaryFields </span><span class="cov8" title="1">{
+                if _, isZero := pf.ValueOf(ctx, reflectValue); isZero </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
+                }</span>
+        }
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(i); err != nil </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithVersion != nil || opts.WithWhereClause != "" </span><span class="cov8" title="1">{
+                where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
+                if err != nil </span><span class="cov0" title="0">{
+                        return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+                }</span>
+                <span class="cov8" title="1">db = db.Where(where, args...)</span>
+        }
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+        <span class="cov8" title="1">db = db.Delete(i)
+        if db.Error != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
+        }</span>
+        <span class="cov8" title="1">rowsDeleted := int(db.RowsAffected)
+        if rowsDeleted &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithAfterWrite(i, rowsDeleted); err != nil </span><span class="cov8" title="1">{
+                        return rowsDeleted, fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">return rowsDeleted, nil</span>
+}
+
+// DeleteItems will delete multiple items of the same type. Options supported:
+// WithDebug, WithTable
+func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+        const op = "dbw.DeleteItems"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if len(deleteItems) == 0 </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(deleteItems); err != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        if opts.WithLookup </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
+        }</span>
+        // verify that createItems are all the same type.
+        <span class="cov8" title="1">var foundType reflect.Type
+        for i, v := range deleteItems </span><span class="cov8" title="1">{
+                if i == 0 </span><span class="cov8" title="1">{
+                        foundType = reflect.TypeOf(v)
+                }</span>
+                <span class="cov8" title="1">currentType := reflect.TypeOf(v)
+                if foundType != currentType </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
+                }</span>
+        }
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(deleteItems); err != nil </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">rowsDeleted := 0
+        for _, item := range deleteItems </span><span class="cov8" title="1">{
+                cnt, err := rw.Delete(ctx, item,
+                        WithDebug(opts.WithDebug),
+                        WithTable(opts.WithTable),
+                )
+                rowsDeleted += cnt
+                if err != nil </span><span class="cov8" title="1">{
+                        return rowsDeleted, fmt.Errorf("%s: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">if rowsDeleted &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithAfterWrite(deleteItems, int(rowsDeleted)); err != nil </span><span class="cov8" title="1">{
+                        return rowsDeleted, fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">return rowsDeleted, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+        "time"
+)
+
+// DoTx will wrap the Handler func passed within a transaction with retries
+// you should ensure that any objects written to the db in your TxHandler are retryable, which
+// means that the object may be sent to the db several times (retried), so
+// things like the primary key may need to be reset before retry.
+func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, retries uint, backOff Backoff, handler TxHandler) (RetryInfo, error) <span class="cov8" title="1">{
+        const op = "dbw.DoTx"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return RetryInfo{}, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if backOff == nil </span><span class="cov8" title="1">{
+                return RetryInfo{}, fmt.Errorf("%s: missing backoff: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if handler == nil </span><span class="cov8" title="1">{
+                return RetryInfo{}, fmt.Errorf("%s: missing handler: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if retryErrorsMatchingFn == nil </span><span class="cov8" title="1">{
+                return RetryInfo{}, fmt.Errorf("%s: missing retry errors matching function: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">info := RetryInfo{}
+        for attempts := uint(1); ; attempts++ </span><span class="cov8" title="1">{
+                if attempts &gt; retries+1 </span><span class="cov8" title="1">{
+                        return info, fmt.Errorf("%s: too many retries: %d of %d: %w", op, attempts-1, retries+1, ErrMaxRetries)
+                }</span>
+
+                // step one of this, start a transaction...
+                <span class="cov8" title="1">newTx := rw.underlying.wrapped.WithContext(ctx)
+                newTx = newTx.Begin()
+
+                newRW := &amp;RW{underlying: &amp;DB{newTx}}
+                if err := handler(newRW, newRW); err != nil </span><span class="cov8" title="1">{
+                        if err := newTx.Rollback().Error; err != nil </span><span class="cov0" title="0">{
+                                return info, fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                        <span class="cov8" title="1">if retry := retryErrorsMatchingFn(err); retry </span><span class="cov8" title="1">{
+                                d := backOff.Duration(attempts)
+                                info.Retries++
+                                info.Backoff = info.Backoff + d
+                                select </span>{
+                                case &lt;-ctx.Done():<span class="cov8" title="1">
+                                        return info, fmt.Errorf("%s: cancelled: %w", op, err)</span>
+                                case &lt;-time.After(d):<span class="cov8" title="1">
+                                        continue</span>
+                                }
+                        }
+                        <span class="cov8" title="1">return info, fmt.Errorf("%s: %w", op, err)</span>
+                }
+
+                <span class="cov8" title="1">if err := newTx.Commit().Error; err != nil </span><span class="cov0" title="0">{
+                        if err := newTx.Rollback().Error; err != nil </span><span class="cov0" title="0">{
+                                return info, fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                        <span class="cov0" title="0">return info, fmt.Errorf("%s: %w", op, err)</span>
+                }
+                <span class="cov8" title="1">return info, nil</span> // it all worked!!!
+        }
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "bytes"
+        "fmt"
+        "strings"
+
+        "github.com/hashicorp/go-secure-stdlib/base62"
+        "golang.org/x/crypto/blake2b"
+)
+
+// NewId creates a new random base62 ID with the provided prefix with an
+// underscore delimiter
+func NewId(prefix string, opt ...Option) (string, error) <span class="cov8" title="1">{
+        const op = "dbw.NewId"
+        if prefix == "" </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("%s: missing prefix: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">var publicId string
+        var err error
+        opts := GetOpts(opt...)
+        if len(opts.WithPrngValues) &gt; 0 </span><span class="cov8" title="1">{
+                sum := blake2b.Sum256([]byte(strings.Join(opts.WithPrngValues, "|")))
+                reader := bytes.NewReader(sum[0:])
+                publicId, err = base62.RandomWithReader(10, reader)
+        }</span> else<span class="cov8" title="1"> {
+                publicId, err = base62.Random(10)
+        }</span>
+        <span class="cov8" title="1">if err != nil </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("%s: unable to generate id: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">return fmt.Sprintf("%s_%s", prefix, publicId), nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+
+        "gorm.io/gorm"
+)
+
+// LookupBy will lookup a resource by it's primary keys, which must be
+// unique. If the resource implements either ResourcePublicIder or
+// ResourcePrivateIder interface, then they are used as the resource's
+// primary key for lookup.  Otherwise, the resource tags are used to
+// determine it's primary key(s) for lookup.  The WithDebug and WithTable
+// options are supported.
+func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.LookupById"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(resourceWithIder); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if err := validateResourcesInterface(resourceWithIder); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">where, keys, err := rw.primaryKeysWhere(ctx, resourceWithIder)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">rw.clearDefaultNullResourceFields(ctx, resourceWithIder)
+        if err := db.Where(where, keys...).First(resourceWithIder).Error; err != nil </span><span class="cov8" title="1">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
+                }</span>
+                <span class="cov8" title="1">return fmt.Errorf("%s: %w", op, err)</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// LookupByPublicId will lookup resource by its public_id, which must be unique.
+// The WithTable option is supported.
+func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder, opt ...Option) error <span class="cov8" title="1">{
+        return rw.LookupBy(ctx, resource, opt...)
+}</span>
+
+func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.lookupAfterWrite"
+        opts := GetOpts(opt...)
+        withLookup := opts.WithLookup
+        if err := raiseErrorOnHooks(i); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if !withLookup </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">if err := rw.LookupBy(ctx, i, opt...); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "github.com/hashicorp/go-hclog"
+)
+
+// GetOpts - iterate the inbound Options and return a struct.
+func GetOpts(opt ...Option) Options <span class="cov8" title="1">{
+        opts := getDefaultOptions()
+        for _, o := range opt </span><span class="cov8" title="1">{
+                if o != nil </span><span class="cov8" title="1">{
+                        o(&amp;opts)
+                }</span>
+        }
+        <span class="cov8" title="1">return opts</span>
+}
+
+// Option - how Options are passed as arguments.
+type Option func(*Options)
+
+// Options - how Options are represented which have been set via an Option
+// function.  Use GetOpts(...) to populated this struct with the options that
+// have been specified for an operation.  All option fields are exported so
+// they're available for use by other packages.
+type Options struct {
+        // WithBeforeWrite provides and option to provide a func to be called before a
+        // write operation. The i interface{} passed at runtime will be the resource(s)
+        // being written.
+        WithBeforeWrite func(i interface{}) error
+
+        // WithAfterWrite provides and option to provide a func to be called after a
+        // write operation.  The i interface{} passed at runtime will be the resource(s)
+        // being written.
+        WithAfterWrite func(i interface{}, rowsAffected int) error
+
+        // WithLookup enables a lookup after a write operation.
+        WithLookup bool
+
+        // WithLimit provides an option to provide a limit.  Intentionally allowing
+        // negative integers.   If WithLimit &lt; 0, then unlimited results are returned.
+        // If WithLimit == 0, then default limits are used for results (see DefaultLimit
+        // const).
+        WithLimit int
+
+        // WithFieldMaskPaths provides an option to provide field mask paths for update
+        // operations.
+        WithFieldMaskPaths []string
+
+        // WithNullPaths provides an option to provide null paths for update
+        // operations.
+        WithNullPaths []string
+
+        // WithVersion provides an option version number for update operations.  Using
+        // this option requires that your resource has a version column that's
+        // incremented for every successful update operation.  Version provides an
+        // optimistic locking mechanism for write operations.
+        WithVersion *uint32
+
+        WithSkipVetForWrite bool
+
+        // WithWhereClause provides an option to provide a where clause for an
+        // operation.
+        WithWhereClause string
+
+        // WithWhereClauseArgs provides an option to provide a where clause arguments for an
+        // operation.
+        WithWhereClauseArgs []interface{}
+
+        // WithOrder provides an option to provide an order when searching and looking
+        // up.
+        WithOrder string
+
+        // WithPrngValues provides an option to provide values to seed an PRNG when generating IDs
+        WithPrngValues []string
+
+        // WithLogger specifies an optional hclog to use for db operations.  It's only
+        // valid for Open(..) and OpenWith(...)
+        WithLogger hclog.Logger
+
+        // WithMinOpenConnections specifies and optional min open connections for the
+        // database.  A value of zero means that there is no min.
+        WithMaxOpenConnections int
+
+        // WithMaxOpenConnections specifies and optional max open connections for the
+        // database.  A value of zero equals unlimited connections
+        WithMinOpenConnections int
+
+        // WithDebug indicates that the given operation should invoke debug output
+        // mode
+        WithDebug bool
+
+        // WithOnConflict specifies an optional on conflict criteria which specify
+        // alternative actions to take when an insert results in a unique constraint or
+        // exclusion constraint error
+        WithOnConflict *OnConflict
+
+        // WithRowsAffected specifies an option for returning the rows affected
+        // and typically used with "bulk" write operations.
+        WithRowsAffected *int64
+
+        // WithTable specifies an option for setting a table name to use for the
+        // operation.
+        WithTable string
+
+        withLogLevel LogLevel
+}
+
+func getDefaultOptions() Options <span class="cov8" title="1">{
+        return Options{
+                WithFieldMaskPaths: []string{},
+                WithNullPaths:      []string{},
+                withLogLevel:       Error,
+        }
+}</span>
+
+// WithBeforeWrite provides and option to provide a func to be called before a
+// write operation. The i interface{} passed at runtime will be the resource(s)
+// being written.
+func WithBeforeWrite(fn func(i interface{}) error) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithBeforeWrite = fn
+        }</span>
+}
+
+// WithAfterWrite provides and option to provide a func to be called after a
+// write operation.  The i interface{} passed at runtime will be the resource(s)
+// being written.
+func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithAfterWrite = fn
+        }</span>
+}
+
+// WithLookup enables a lookup after a write operation.
+func WithLookup(enable bool) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithLookup = enable
+        }</span>
+}
+
+// WithFieldMaskPaths provides an option to provide field mask paths for update
+// operations.
+func WithFieldMaskPaths(paths []string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithFieldMaskPaths = paths
+        }</span>
+}
+
+// WithNullPaths provides an option to provide null paths for update operations.
+func WithNullPaths(paths []string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithNullPaths = paths
+        }</span>
+}
+
+// WithLimit provides an option to provide a limit.  Intentionally allowing
+// negative integers.   If WithLimit &lt; 0, then unlimited results are returned.
+// If WithLimit == 0, then default limits are used for results (see DefaultLimit
+// const).
+func WithLimit(limit int) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithLimit = limit
+        }</span>
+}
+
+// WithVersion provides an option version number for update operations.  Using
+// this option requires that your resource has a version column that's
+// incremented for every successful update operation.  Version provides an
+// optimistic locking mechanism for write operations.
+func WithVersion(version *uint32) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithVersion = version
+        }</span>
+}
+
+// WithSkipVetForWrite provides an option to allow skipping vet checks to allow
+// testing lower-level SQL triggers and constraints
+func WithSkipVetForWrite(enable bool) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithSkipVetForWrite = enable
+        }</span>
+}
+
+// WithWhere provides an option to provide a where clause with arguments for an
+// operation.
+func WithWhere(whereClause string, args ...interface{}) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithWhereClause = whereClause
+                o.WithWhereClauseArgs = append(o.WithWhereClauseArgs, args...)
+        }</span>
+}
+
+// WithOrder provides an option to provide an order when searching and looking
+// up.
+func WithOrder(withOrder string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithOrder = withOrder
+        }</span>
+}
+
+// WithPrngValues provides an option to provide values to seed an PRNG when generating IDs
+func WithPrngValues(withPrngValues []string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithPrngValues = withPrngValues
+        }</span>
+}
+
+// WithLogger specifies an optional hclog to use for db operations.  It's only
+// valid for Open(..) and OpenWith(...)
+func WithLogger(l hclog.Logger) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithLogger = l
+        }</span>
+}
+
+// WithMaxOpenConnections specifies and optional max open connections for the
+// database.  A value of zero equals unlimited connections
+func WithMaxOpenConnections(max int) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithMaxOpenConnections = max
+        }</span>
+}
+
+// WithMinOpenConnections specifies and optional min open connections for the
+// database.  A value of zero means that there is no min.
+func WithMinOpenConnections(max int) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithMinOpenConnections = max
+        }</span>
+}
+
+// WithDebug specifies the given operation should invoke debug mode for the
+// database output
+func WithDebug(with bool) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithDebug = with
+        }</span>
+}
+
+// WithOnConflict specifies an optional on conflict criteria which specify
+// alternative actions to take when an insert results in a unique constraint or
+// exclusion constraint error
+func WithOnConflict(onConflict *OnConflict) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithOnConflict = onConflict
+        }</span>
+}
+
+// WithReturnRowsAffected specifies an option for returning the rows affected
+// and typically used with "bulk" write operations.
+func WithReturnRowsAffected(rowsAffected *int64) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithRowsAffected = rowsAffected
+        }</span>
+}
+
+// WithTable specifies an option for setting a table name to use for the
+// operation.
+func WithTable(name string) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithTable = name
+        }</span>
+}
+
+// WithLogLevel specifies an option for setting the log level
+func WithLogLevel(l LogLevel) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.withLogLevel = l
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+)
+
+// Query will run the raw query and return the *sql.Rows results. Query will
+// operate within the context of any ongoing transaction for the Reader.  The
+// caller must close the returned *sql.Rows. Query can/should be used in
+// combination with ScanRows. The WithDebug option is supported.
+func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, opt ...Option) (*sql.Rows, error) <span class="cov8" title="1">{
+        const op = "dbw.Query"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">if sql == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">db = db.Raw(sql, values...)
+        if db.Error != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%s: %w", op, db.Error)
+        }</span>
+        <span class="cov8" title="1">return db.Rows()</span>
+}
+
+// ScanRows will scan the rows into the interface
+func (rw *RW) ScanRows(rows *sql.Rows, result interface{}) error <span class="cov8" title="1">{
+        const op = "dbw.ScanRows"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">if rows == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing rows: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if isNil(result) </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing result: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">return rw.underlying.wrapped.ScanRows(rows, result)</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+        "reflect"
+        "strings"
+
+        "gorm.io/gorm"
+        "gorm.io/gorm/callbacks"
+)
+
+const (
+        noRowsAffected = 0
+
+        // DefaultLimit is the default for search results when no limit is specified
+        // via the WithLimit(...) option
+        DefaultLimit = 10000
+)
+
+// RW uses a DB as a connection for it's read/write operations.  This is
+// basically the primary type for the package's operations.
+type RW struct {
+        underlying *DB
+}
+
+// ensure that RW implements the interfaces of: Reader and Writer
+var (
+        _ Reader = (*RW)(nil)
+        _ Writer = (*RW)(nil)
+)
+
+// New creates a new RW using an open DB. Note: there can by many RWs that share
+// the same DB, since the DB manages the connection pool.
+func New(underlying *DB) *RW <span class="cov8" title="1">{
+        return &amp;RW{underlying: underlying}
+}</span>
+
+// DB returns the underlying DB
+func (rw *RW) DB() *DB <span class="cov0" title="0">{
+        return rw.underlying
+}</span>
+
+// Exec will execute the sql with the values as parameters. The int returned
+// is the number of rows affected by the sql. The WithDebug option is supported.
+func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+        const op = "dbw.Exec"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
+        }</span>
+        <span class="cov8" title="1">if sql == "" </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing sql: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">db = db.Exec(sql, values...)
+        if db.Error != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
+        }</span>
+        <span class="cov8" title="1">return int(db.RowsAffected), nil</span>
+}
+
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) <span class="cov8" title="1">{
+        const op = "dbw.primaryFieldsAreZero"
+        var fieldNames []string
+        tx := rw.underlying.wrapped.Model(i)
+        if err := tx.Statement.Parse(i); err != nil </span><span class="cov0" title="0">{
+                return nil, false, fmt.Errorf("%s: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">for _, f := range tx.Statement.Schema.PrimaryFields </span><span class="cov8" title="1">{
+                if f.PrimaryKey </span><span class="cov8" title="1">{
+                        if _, isZero := f.ValueOf(ctx, reflect.ValueOf(i)); isZero </span><span class="cov8" title="1">{
+                                fieldNames = append(fieldNames, f.Name)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return fieldNames, len(fieldNames) &gt; 0, nil</span>
+}
+
+func isNil(i interface{}) bool <span class="cov8" title="1">{
+        if i == nil </span><span class="cov8" title="1">{
+                return true
+        }</span>
+        <span class="cov8" title="1">switch reflect.TypeOf(i).Kind() </span>{
+        case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:<span class="cov8" title="1">
+                return reflect.ValueOf(i).IsNil()</span>
+        }
+        <span class="cov0" title="0">return false</span>
+}
+
+func contains(ss []string, t string) bool <span class="cov8" title="1">{
+        for _, s := range ss </span><span class="cov8" title="1">{
+                if strings.EqualFold(s, t) </span><span class="cov8" title="1">{
+                        return true
+                }</span>
+        }
+        <span class="cov8" title="1">return false</span>
+}
+
+func validateResourcesInterface(resources interface{}) error <span class="cov8" title="1">{
+        const op = "dbw.validateResourcesInterface"
+        vo := reflect.ValueOf(resources)
+        if vo.Kind() != reflect.Ptr </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: interface parameter must to be a pointer: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">e := vo.Elem()
+        if e.Kind() == reflect.Slice </span><span class="cov8" title="1">{
+                if e.Type().Elem().Kind() != reflect.Ptr </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: interface parameter is a slice, but the elements of the slice are not pointers: %w", op, ErrInvalidParameter)
+                }</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+func raiseErrorOnHooks(i interface{}) error <span class="cov8" title="1">{
+        const op = "dbw.raiseErrorOnHooks"
+        v := i
+        valOf := reflect.ValueOf(i)
+        if valOf.Kind() == reflect.Slice </span><span class="cov8" title="1">{
+                if valOf.Len() == 0 </span><span class="cov0" title="0">{
+                        return nil
+                }</span>
+                <span class="cov8" title="1">v = valOf.Index(0).Interface()</span>
+        }
+
+        <span class="cov8" title="1">switch v.(type) </span>{
+        case
+                // create hooks
+                callbacks.BeforeCreateInterface,
+                callbacks.AfterCreateInterface,
+                callbacks.BeforeSaveInterface,
+                callbacks.AfterSaveInterface,
+
+                // update hooks
+                callbacks.BeforeUpdateInterface,
+                callbacks.AfterUpdateInterface,
+
+                // delete hooks
+                callbacks.BeforeDeleteInterface,
+                callbacks.AfterDeleteInterface,
+
+                // find hooks
+                callbacks.AfterFindInterface:<span class="cov8" title="1">
+
+                return fmt.Errorf("%s: gorm callback/hooks are not supported: %w", op, ErrInvalidParameter)</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// IsTx returns true if there's an existing transaction in progress
+func (rw *RW) IsTx() bool <span class="cov8" title="1">{
+        if rw.underlying == nil </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        <span class="cov8" title="1">switch rw.underlying.wrapped.Statement.ConnPool.(type) </span>{
+        case gorm.TxBeginner, gorm.ConnPoolBeginner:<span class="cov8" title="1">
+                return false</span>
+        default:<span class="cov8" title="1">
+                return true</span>
+        }
+}
+
+func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Options) (string, []interface{}, error) <span class="cov8" title="1">{
+        const op = "dbw.whereClausesFromOpts"
+        var where []string
+        var args []interface{}
+        if opts.WithVersion != nil </span><span class="cov8" title="1">{
+                if *opts.WithVersion == 0 </span><span class="cov8" title="1">{
+                        return "", nil, fmt.Errorf("%s: with version option is zero: %w", op, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">mDb := rw.underlying.wrapped.Model(i)
+                err := mDb.Statement.Parse(i)
+                if err != nil &amp;&amp; mDb.Statement.Schema == nil </span><span class="cov0" title="0">{
+                        return "", nil, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)
+                }</span>
+                <span class="cov8" title="1">if !contains(mDb.Statement.Schema.DBNames, "version") </span><span class="cov8" title="1">{
+                        return "", nil, fmt.Errorf("%s: %s does not have a version field: %w", op, mDb.Statement.Schema.Table, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">if opts.WithOnConflict != nil </span><span class="cov8" title="1">{
+                        // on conflict clauses requires the version to be qualified with a
+                        // table name
+                        var tableName string
+                        switch </span>{
+                        case opts.WithTable != "":<span class="cov8" title="1">
+                                tableName = opts.WithTable</span>
+                        default:<span class="cov8" title="1">
+                                tableName = mDb.Statement.Schema.Table</span>
+                        }
+                        <span class="cov8" title="1">where = append(where, fmt.Sprintf("%s.version = ?", tableName))</span> // we need to include the table name because of "on conflict" use cases
+                } else<span class="cov8" title="1"> {
+                        where = append(where, "version = ?")
+                }</span>
+                <span class="cov8" title="1">args = append(args, opts.WithVersion)</span>
+        }
+        <span class="cov8" title="1">if opts.WithWhereClause != "" </span><span class="cov8" title="1">{
+                where, args = append(where, opts.WithWhereClause), append(args, opts.WithWhereClauseArgs...)
+        }</span>
+        <span class="cov8" title="1">return strings.Join(where, " and "), args, nil</span>
+}
+
+// clearDefaultNullResourceFields will clear fields in the resource which are
+// defaulted to a null value.  This addresses the unfixed issue in gorm:
+// https://github.com/go-gorm/gorm/issues/6351
+func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{}) error <span class="cov8" title="1">{
+        const op = "dbw.ClearResourceFields"
+        stmt := rw.underlying.wrapped.Model(i).Statement
+        if err := stmt.Parse(i); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">v := reflect.ValueOf(i)
+        for _, f := range stmt.Schema.Fields </span><span class="cov8" title="1">{
+                switch </span>{
+                case f.PrimaryKey:<span class="cov8" title="1">
+                        // seems a bit redundant, with the test for null, but it's very
+                        // important to not clear the primary fields, so we'll make an
+                        // explicit test
+                        continue</span>
+                case !f.Updatable:<span class="cov8" title="1">
+                        // well, based on the gorm tags it's a read-only field, so we're done.
+                        continue</span>
+                case !strings.EqualFold(f.DefaultValue, "null"):<span class="cov8" title="1">
+                        continue</span>
+                default:<span class="cov8" title="1">
+                        _, isZero := f.ValueOf(ctx, v)
+                        if isZero </span><span class="cov8" title="1">{
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">if err := f.Set(stmt.Context, v, f.DefaultValueInterface); err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("%s: unable to set value of non-zero field: %w", op, err)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) <span class="cov8" title="1">{
+        const op = "dbw.primaryKeysWhere"
+        var fieldNames []string
+        var fieldValues []interface{}
+        tx := rw.underlying.wrapped.Model(i)
+        if err := tx.Statement.Parse(i); err != nil </span><span class="cov0" title="0">{
+                return "", nil, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">switch resourceType := i.(type) </span>{
+        case ResourcePublicIder:<span class="cov8" title="1">
+                if resourceType.GetPublicId() == "" </span><span class="cov8" title="1">{
+                        return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">fieldValues = []interface{}{resourceType.GetPublicId()}
+                fieldNames = []string{"public_id"}</span>
+        case ResourcePrivateIder:<span class="cov8" title="1">
+                if resourceType.GetPrivateId() == "" </span><span class="cov8" title="1">{
+                        return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">fieldValues = []interface{}{resourceType.GetPrivateId()}
+                fieldNames = []string{"private_id"}</span>
+        default:<span class="cov8" title="1">
+                v := reflect.ValueOf(i)
+                for _, f := range tx.Statement.Schema.PrimaryFields </span><span class="cov8" title="1">{
+                        if f.PrimaryKey </span><span class="cov8" title="1">{
+                                val, isZero := f.ValueOf(ctx, v)
+                                if isZero </span><span class="cov8" title="1">{
+                                        return "", nil, fmt.Errorf("%s: primary field %s is zero: %w", op, f.Name, ErrInvalidParameter)
+                                }</span>
+                                <span class="cov8" title="1">fieldNames = append(fieldNames, f.DBName)
+                                fieldValues = append(fieldValues, val)</span>
+                        }
+                }
+        }
+        <span class="cov8" title="1">if len(fieldNames) == 0 </span><span class="cov8" title="1">{
+                return "", nil, fmt.Errorf("%s: no primary key(s) for %t: %w", op, i, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">clauses := make([]string, 0, len(fieldNames))
+        for _, col := range fieldNames </span><span class="cov8" title="1">{
+                clauses = append(clauses, fmt.Sprintf("%s = ?", col))
+        }</span>
+        <span class="cov8" title="1">return strings.Join(clauses, " and "), fieldValues, nil</span>
+}
+
+// LookupWhere will lookup the first resource using a where clause with
+// parameters (it only returns the first one). Supports WithDebug, and
+// WithTable options.
+func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.LookupWhere"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := validateResourcesInterface(resource); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(resource); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">if err := db.Where(where, args...).First(resource).Error; err != nil </span><span class="cov8" title="1">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: %w", op, ErrRecordNotFound)
+                }</span>
+                <span class="cov8" title="1">return fmt.Errorf("%s: %w", op, err)</span>
+        }
+        <span class="cov8" title="1">return nil</span>
+}
+
+// SearchWhere will search for all the resources it can find using a where
+// clause with parameters. An error will be returned if args are provided without a
+// where clause.
+//
+// Supports WithTable and WithLimit options.  If WithLimit &lt; 0, then unlimited results are returned.
+// If WithLimit == 0, then default limits are used for results.
+// Supports the WithOrder, WithTable, and WithDebug options.
+func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error <span class="cov8" title="1">{
+        const op = "dbw.SearchWhere"
+        opts := GetOpts(opt...)
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if where == "" &amp;&amp; len(args) &gt; 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: args provided with empty where: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(resources); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if err := validateResourcesInterface(resources); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">var err error
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithOrder != "" </span><span class="cov8" title="1">{
+                db = db.Order(opts.WithOrder)
+        }</span>
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov0" title="0">{
+                db = db.Debug()
+        }</span>
+        <span class="cov8" title="1">if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+        // Perform limiting
+        <span class="cov8" title="1">switch </span>{
+        case opts.WithLimit &lt; 0:<span class="cov8" title="1"></span> // any negative number signals unlimited results
+        case opts.WithLimit == 0:<span class="cov0" title="0"> // zero signals the default value and default limits
+                db = db.Limit(DefaultLimit)</span>
+        default:<span class="cov8" title="1">
+                db = db.Limit(opts.WithLimit)</span>
+        }
+
+        <span class="cov8" title="1">if where != "" </span><span class="cov8" title="1">{
+                db = db.Where(where, args...)
+        }</span>
+
+        // Perform the query
+        <span class="cov8" title="1">err = db.Find(resources).Error
+        if err != nil </span><span class="cov8" title="1">{
+                // searching with a slice parameter does not return a gorm.ErrRecordNotFound
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (rw *RW) Dialect() (_ DbType, rawName string, _ error) <span class="cov8" title="1">{
+        return rw.underlying.DbType()
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "database/sql"
+        "fmt"
+        "os"
+        "strings"
+        "testing"
+
+        "github.com/DATA-DOG/go-sqlmock"
+        "github.com/xo/dburl"
+        pgDriver "gorm.io/driver/postgres"
+
+        "github.com/stretchr/testify/assert"
+        "github.com/stretchr/testify/require"
+        "gorm.io/gorm/logger"
+)
+
+// TestSetup is typically called before starting a test and will setup the
+// database for the test (initialize the database one-time). Do not close the
+// returned db.  Supported test options: WithDebug, WithTestDialect,
+// WithTestDatabaseUrl, WithTestMigration and WithTestMigrationUsingDB.
+func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) <span class="cov8" title="1">{
+        require := require.New(t)
+        var url string
+        var err error
+
+        InitNonUpdatableFields([]string{"CreateTime", "UpdateTime", "PublicId"})
+        InitNonCreatableFields([]string{"CreateTime", "UpdateTime"})
+
+        ctx := context.Background()
+
+        opts := getTestOpts(opt...)
+
+        switch strings.ToLower(os.Getenv("DB_DIALECT")) </span>{
+        case "postgres":<span class="cov0" title="0">
+                opts.withDialect = Postgres.String()</span>
+        case "sqlite":<span class="cov0" title="0">
+                opts.withDialect = Sqlite.String()</span>
+        default:<span class="cov8" title="1">
+                if opts.withDialect == "" </span><span class="cov8" title="1">{
+                        opts.withDialect = Sqlite.String()
+                }</span>
+        }
+
+        <span class="cov8" title="1">if url := os.Getenv("DB_DSN"); url != "" </span><span class="cov0" title="0">{
+                opts.withTestDatabaseUrl = url
+        }</span>
+
+        <span class="cov8" title="1">switch </span>{
+        case opts.withDialect == Postgres.String() &amp;&amp; opts.withTestDatabaseUrl == "":<span class="cov0" title="0">
+                t.Fatal("missing postgres test db url")</span>
+
+        case opts.withDialect == Sqlite.String() &amp;&amp; opts.withTestDatabaseUrl == "":<span class="cov8" title="1">
+                url = "file::memory:"</span> // just using a temp in-memory sqlite database
+        default:<span class="cov0" title="0">
+                url = opts.withTestDatabaseUrl</span>
+        }
+
+        <span class="cov8" title="1">switch opts.withDialect </span>{
+        case Postgres.String():<span class="cov0" title="0">
+                u, err := dburl.Parse(opts.withTestDatabaseUrl)
+                require.NoError(err)
+                db, err := Open(Postgres, u.DSN)
+                require.NoError(err)
+                rw := New(db)
+                tmpDbName, err := NewId("go_db_tmp")
+                tmpDbName = strings.ToLower(tmpDbName)
+                require.NoError(err)
+                _, err = rw.Exec(ctx, fmt.Sprintf(`create database "%s"`, tmpDbName), nil)
+                require.NoError(err)
+                t.Cleanup(func() </span><span class="cov0" title="0">{
+                        _, err = rw.Exec(ctx, `select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid &lt;&gt; pg_backend_pid()`, []interface{}{tmpDbName})
+                        assert.NoError(t, err)
+                        _, err = rw.Exec(ctx, fmt.Sprintf(`drop database %s`, tmpDbName), nil)
+                        assert.NoError(t, err)
+                }</span>)
+                <span class="cov0" title="0">_, err = rw.Exec(ctx, fmt.Sprintf(`grant all privileges on database %s to %s`, tmpDbName, u.User.Username()), nil)
+                require.NoError(err)
+
+                namesSegs := strings.Split(strings.TrimPrefix(u.Path, "/"), "?")
+                require.Truef(len(namesSegs) &gt; 0, "couldn't determine db name from URL")
+                namesSegs[0] = tmpDbName
+                u.Path = strings.Join(namesSegs, "?")
+                url, _, err = dburl.GenPostgres(u)
+                require.NoError(err)</span>
+        }
+
+        <span class="cov8" title="1">dbType, err := StringToDbType(opts.withDialect)
+        require.NoError(err)
+
+        db, err := Open(dbType, url)
+        require.NoError(err)
+
+        db.wrapped.Logger.LogMode(logger.Error)
+        t.Cleanup(func() </span><span class="cov8" title="1">{
+                assert.NoError(t, db.Close(ctx), "Got error closing db.")
+        }</span>)
+
+        <span class="cov8" title="1">if opts.withTestDebug || strings.ToLower(os.Getenv("DEBUG")) == "true" </span><span class="cov0" title="0">{
+                db.Debug(true)
+        }</span>
+
+        // we're only going to run one set of migrations.  Either one of the
+        // migration functions passed in as an option or the default
+        // TestCreateTables(...)
+        <span class="cov8" title="1">switch </span>{
+        case opts.withTestMigration != nil:<span class="cov8" title="1">
+                err = opts.withTestMigration(ctx, opts.withDialect, url)
+                require.NoError(err)</span>
+
+        case opts.withTestMigrationUsingDb != nil:<span class="cov8" title="1">
+                var rawDB *sql.DB
+                switch opts.withDialect </span>{
+                case Sqlite.String():<span class="cov8" title="1">
+                        // we need to special case handle sqlite because we may want to run
+                        // the migration on an in-memory database that isn't shared
+                        // "file::memory:" or ":memory:" so we have to be sure that we don't
+                        // open a new connection, which would create a new in-memory db vs
+                        // using the existing one already opened in this function a few
+                        // lines above with: db, err := Open(dbType, url)
+                        // see: https://www.sqlite.org/inmemorydb.html
+                        //
+                        // luckily, the gorm sqlite ConnPool is the existing opened *sql.DB,
+                        // so we can just run the migration on that conn
+                        var ok bool
+                        rawDB, ok = db.wrapped.ConnPool.(*sql.DB)
+                        require.True(ok, "expected the gorm ConnPool to be an *sql.DB")</span>
+                default:<span class="cov0" title="0">
+                        var err error
+                        rawDB, err = db.wrapped.DB()
+                        if err != nil </span><span class="cov0" title="0">{
+                                require.NoError(err)
+                        }</span>
+                }
+                <span class="cov8" title="1">err = opts.withTestMigrationUsingDb(ctx, rawDB)
+                require.NoError(err)</span>
+        default:<span class="cov8" title="1">
+                TestCreateTables(t, db)</span>
+        }
+        <span class="cov8" title="1">return db, url</span>
+}
+
+// TestSetupWithMock will return a test DB and an associated Sqlmock which can
+// be used to mock out the db responses.
+func TestSetupWithMock(t *testing.T) (*DB, sqlmock.Sqlmock) <span class="cov8" title="1">{
+        t.Helper()
+        require := require.New(t)
+        db, mock, err := sqlmock.New()
+        require.NoError(err)
+        require.NoError(err)
+        dbw, err := OpenWith(pgDriver.New(pgDriver.Config{
+                Conn: db,
+        }))
+        require.NoError(err)
+        return dbw, mock
+}</span>
+
+// getTestOpts - iterate the inbound TestOptions and return a struct
+func getTestOpts(opt ...TestOption) testOptions <span class="cov8" title="1">{
+        opts := getDefaultTestOptions()
+        for _, o := range opt </span><span class="cov8" title="1">{
+                o(&amp;opts)
+        }</span>
+        <span class="cov8" title="1">return opts</span>
+}
+
+// TestOption - how Options are passed as arguments
+type TestOption func(*testOptions)
+
+// options = how options are represented
+type testOptions struct {
+        withDialect              string
+        withTestDatabaseUrl      string
+        withTestMigration        func(ctx context.Context, dialect, url string) error
+        withTestMigrationUsingDb func(ctx context.Context, db *sql.DB) error
+        withTestDebug            bool
+}
+
+func getDefaultTestOptions() testOptions <span class="cov8" title="1">{
+        return testOptions{}
+}</span>
+
+// WithTestDialect provides a way to specify the test database dialect
+func WithTestDialect(dialect string) TestOption <span class="cov8" title="1">{
+        return func(o *testOptions) </span><span class="cov8" title="1">{
+                o.withDialect = dialect
+        }</span>
+}
+
+// WithTestMigration provides a way to specify an option func which runs a
+// required database migration to initialize the database
+func WithTestMigration(migrationFn func(ctx context.Context, dialect, url string) error) TestOption <span class="cov8" title="1">{
+        return func(o *testOptions) </span><span class="cov8" title="1">{
+                o.withTestMigration = migrationFn
+        }</span>
+}
+
+// WithTestMigrationUsingDB provides a way to specify an option func which runs a
+// required database migration to initialize the database using an existing open
+// sql.DB
+func WithTestMigrationUsingDB(migrationFn func(ctx context.Context, db *sql.DB) error) TestOption <span class="cov8" title="1">{
+        return func(o *testOptions) </span><span class="cov8" title="1">{
+                o.withTestMigrationUsingDb = migrationFn
+        }</span>
+}
+
+// WithTestDatabaseUrl provides a way to specify an existing database for tests
+func WithTestDatabaseUrl(url string) TestOption <span class="cov8" title="1">{
+        return func(o *testOptions) </span><span class="cov8" title="1">{
+                o.withTestDatabaseUrl = url
+        }</span>
+}
+
+// TestCreateTables will create the test tables for the dbw pkg
+func TestCreateTables(t *testing.T, conn *DB) <span class="cov8" title="1">{
+        t.Helper()
+        require := require.New(t)
+        testCtx := context.Background()
+        rw := New(conn)
+        var query string
+        switch conn.wrapped.Dialector.Name() </span>{
+        case "sqlite":<span class="cov8" title="1">
+                query = testQueryCreateTablesSqlite</span>
+        case "postgres":<span class="cov0" title="0">
+                query = testQueryCreateTablesPostgres</span>
+        default:<span class="cov0" title="0">
+                t.Fatalf("unknown dialect: %s", conn.wrapped.Dialector.Name())</span>
+        }
+        <span class="cov8" title="1">_, err := rw.Exec(testCtx, query, nil)
+        require.NoError(err)</span>
+}
+
+func testDropTables(t *testing.T, conn *DB) <span class="cov8" title="1">{
+        t.Helper()
+        require := require.New(t)
+        testCtx := context.Background()
+        rw := New(conn)
+        var query string
+        switch conn.wrapped.Dialector.Name() </span>{
+        case "sqlite":<span class="cov8" title="1">
+                query = testQueryDropTablesSqlite</span>
+        case "postgres":<span class="cov0" title="0">
+                query = testQueryDropTablesPostgres</span>
+        default:<span class="cov0" title="0">
+                t.Fatalf("unknown dialect: %s", conn.wrapped.Dialector.Name())</span>
+        }
+        <span class="cov8" title="1">_, err := rw.Exec(testCtx, query, nil)
+        require.NoError(err)</span>
+}
+
+const (
+        testQueryCreateTablesSqlite = `        
+begin;
+
+create table if not exists db_test_user (
+  public_id text not null constraint db_test_user_pkey primary key,
+  create_time timestamp not null default current_timestamp,
+  update_time timestamp not null default current_timestamp,
+  name text unique,
+  phone_number text,
+  email text,
+  version int default 1
+);
+
+create trigger update_time_column_db_test_user
+before update on db_test_user 
+for each row 
+when 
+  new.public_id         &lt;&gt; old.public_id or
+  new.name              &lt;&gt; old.name or
+  new.phone_number         &lt;&gt; old.phone_number or
+  new.email             &lt;&gt; old.email or
+  new.version           &lt;&gt; old.version 
+  begin
+    update db_test_user set update_time = datetime('now','localtime') where rowid == new.rowid;
+  end;
+
+create trigger immutable_columns_db_test_user
+before update on db_test_user 
+for each row 
+  when 
+        new.create_time &lt;&gt; old.create_time
+        begin
+          select raise(abort, 'immutable column');
+        end;
+
+create trigger default_create_time_column_db_test_user
+before insert on db_test_user
+for each row
+  begin
+        update db_test_user set create_time = datetime('now','localtime') where rowid = new.rowid;
+  end;
+        
+create trigger update_version_column_db_test_user
+after update on db_test_user
+for each row
+when 
+  new.public_id         &lt;&gt; old.public_id or
+  new.name              &lt;&gt; old.name or
+  new.phone_number  &lt;&gt; old.phone_number or
+  new.email             &lt;&gt; old.email
+  begin
+    update db_test_user set version = old.version + 1 where rowid = new.rowid;
+  end;
+  
+create table if not exists db_test_car (
+        public_id text constraint db_test_car_pkey primary key,
+        create_time timestamp not null default current_timestamp,
+        update_time timestamp not null default current_timestamp,
+        name text unique,
+        model text,
+        mpg smallint,
+        version int default 1
+);
+  
+create trigger update_time_column_db_test_car
+before update on db_test_car
+for each row 
+when 
+  new.public_id         &lt;&gt; old.public_id or
+  new.name              &lt;&gt; old.name or
+  new.model                 &lt;&gt; old.model or
+  new.mpg                     &lt;&gt; old.mpg or
+  new.version           &lt;&gt; old.version 
+  begin
+    update db_test_car set update_time = datetime('now','localtime') where rowid == new.rowid;
+  end;
+
+  create trigger default_create_time_column_db_test_car
+  before insert on db_test_car
+  for each row
+        begin
+          update db_test_car set create_time = datetime('now','localtime') where rowid = new.rowid;
+        end;
+  
+create trigger update_version_column_db_test_car
+after update on db_test_car
+for each row
+when 
+        new.public_id         &lt;&gt; old.public_id or
+        new.name              &lt;&gt; old.name or
+        new.model                  &lt;&gt; old.model or
+        new.mpg             &lt;&gt; old.mpg
+        begin
+        update db_test_car set version = old.version + 1 where rowid = new.rowid;
+        end;
+
+
+create table if not exists db_test_rental (
+        user_id text not null references db_test_user(public_id),
+        car_id  text not null references db_test_car(public_id),
+        create_time timestamp not null default current_timestamp,
+        update_time timestamp not null default current_timestamp,
+        name text unique,
+        version int default 1,
+        constraint db_test_rental_pkey primary key(user_id, car_id)
+
+);
+
+create trigger update_time_column_db_test_rental
+before update on db_test_rental
+for each row 
+when 
+        new.user_id         &lt;&gt; old.user_id or
+        new.car_id                 &lt;&gt; old.car_id or
+        new.name              &lt;&gt; old.name or
+        new.version           &lt;&gt; old.version 
+        begin
+                update db_test_rental set update_time = datetime('now','localtime') where rowid == new.rowid;
+        end;
+          
+create trigger immutable_columns_db_test_rental
+before update on db_test_rental
+for each row 
+when 
+        new.create_time &lt;&gt; old.create_time
+        begin
+                select raise(abort, 'immutable column');
+        end;
+          
+create trigger default_create_time_column_db_test_rental
+before insert on db_test_rental
+for each row
+begin
+        update db_test_rental set create_time = datetime('now','localtime') where rowid = new.rowid;
+end;
+        
+create trigger update_version_column_db_test_rental
+after update on db_test_rental
+for each row
+when 
+        new.user_id         &lt;&gt; old.user_id or
+        new.car_id                 &lt;&gt; old.car_id or
+        new.name              &lt;&gt; old.name or
+        new.version           &lt;&gt; old.version 
+        begin
+                update db_test_rental set version = old.version + 1 where rowid = new.rowid;
+        end;
+
+create table if not exists db_test_scooter (
+        private_id text constraint db_test_scooter_pkey primary key,
+        create_time timestamp not null default current_timestamp,
+        update_time timestamp not null default current_timestamp,
+        name text unique,
+        model text,
+        mpg smallint,
+        version int default 1
+);
+
+create trigger update_time_column_db_test_scooter
+before update on db_test_scooter
+for each row 
+when 
+  new.private_id         &lt;&gt; old.private_id or
+  new.name              &lt;&gt; old.name or
+  new.model                 &lt;&gt; old.model or
+  new.mpg                     &lt;&gt; old.mpg or
+  new.version           &lt;&gt; old.version 
+  begin
+    update db_test_scooter set update_time = datetime('now','localtime') where rowid == new.rowid;
+  end;
+
+  create trigger default_create_time_column_db_test_scooter
+  before insert on db_test_scooter
+  for each row
+        begin
+          update db_test_scooter set create_time = datetime('now','localtime') where rowid = new.rowid;
+        end;
+  
+create trigger update_version_column_db_test_scooter
+after update on db_test_scooter
+for each row
+when 
+        new.private_id         &lt;&gt; old.private_id or
+        new.name              &lt;&gt; old.name or
+        new.model                  &lt;&gt; old.model or
+        new.mpg             &lt;&gt; old.mpg
+        begin
+        update db_test_scooter set version = old.version + 1 where rowid = new.rowid;
+        end;
+
+
+  commit;
+        `
+
+        testQueryCreateTablesPostgres = `
+begin;
+
+create domain wt_public_id as text
+check(
+  length(trim(value)) &gt; 10
+);
+comment on domain wt_public_id is
+'Random ID generated with github.com/hashicorp/go-secure-stdlib/base62';
+
+create domain wt_private_id as text
+not null
+check(
+  length(trim(value)) &gt; 10
+);
+comment on domain wt_private_id is
+'Random ID generated with github.com/hashicorp/go-secure-stdlib/base62';
+
+drop domain if exists wt_timestamp;
+create domain wt_timestamp as
+  timestamp with time zone
+  default current_timestamp;
+comment on domain wt_timestamp is
+'Standard timestamp for all create_time and update_time columns';
+
+create or replace function
+  update_time_column()
+  returns trigger
+as $$
+begin
+  if row(new.*) is distinct from row(old.*) then
+    new.update_time = now();
+    return new;
+  else
+    return old;
+  end if;
+end;
+$$ language plpgsql;
+
+comment on function
+  update_time_column()
+is
+  'function used in before update triggers to properly set update_time columns';
+  
+create or replace function
+  default_create_time()
+  returns trigger
+as $$
+begin
+  if new.create_time is distinct from now() then
+    raise warning 'create_time cannot be set to %', new.create_time;
+    new.create_time = now();
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+comment on function
+  default_create_time()
+is
+  'function used in before insert triggers to set create_time column to now';
+
+
+  create domain wt_version as bigint
+  default 1
+  not null
+  check(
+   value &gt; 0
+  );
+comment on domain wt_version is
+'standard column for row version';
+
+-- update_version_column() will increment the version column whenever row data
+-- is updated and should only be used in an update after trigger.  This function
+-- will overwrite any explicit updates to the version column. The function
+-- accepts an optional parameter of 'private_id' for the tables primary key.
+create or replace function
+  update_version_column()
+  returns trigger
+as $$
+begin
+  if pg_trigger_depth() = 1 then
+    if row(new.*) is distinct from row(old.*) then
+      if tg_nargs = 0 then
+        execute format('update %I set version = $1 where public_id = $2', tg_relid::regclass) using old.version+1, new.public_id;
+        new.version = old.version + 1;
+        return new;
+      end if;
+      if tg_argv[0] = 'private_id' then
+        execute format('update %I set version = $1 where private_id = $2', tg_relid::regclass) using old.version+1, new.private_id;
+        new.version = old.version + 1;
+        return new;
+      end if;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+comment on function
+  update_version_column()
+is
+  'function used in after update triggers to properly set version columns';
+
+-- immutable_columns() will make the column names immutable which are passed as
+-- parameters when the trigger is created. It raises error code 23601 which is a
+-- class 23 integrity constraint violation: immutable column  
+create or replace function
+  immutable_columns()
+  returns trigger
+as $$
+declare 
+        col_name text; 
+        new_value text;
+        old_value text;
+begin
+  foreach col_name in array tg_argv loop
+    execute format('SELECT $1.%I', col_name) into new_value using new;
+    execute format('SELECT $1.%I', col_name) into old_value using old;
+          if new_value is distinct from old_value then
+      raise exception 'immutable column: %.%', tg_table_name, col_name using
+        errcode = '23601', 
+        schema = tg_table_schema,
+        table = tg_table_name,
+        column = col_name;
+          end if;
+  end loop;
+  return new;
+end;
+$$ language plpgsql;
+
+comment on function
+  immutable_columns()
+is
+  'function used in before update triggers to make columns immutable';
+
+-- ########################################################################################
+
+create table if not exists db_test_user (
+        public_id wt_public_id constraint db_test_user_pkey primary key,
+        create_time wt_timestamp,
+        update_time wt_timestamp,
+        name text unique,
+        phone_number text,
+        email text,
+        version wt_version
+);
+        
+create trigger update_time_column 
+before 
+update on db_test_user 
+        for each row execute procedure update_time_column();
+
+-- define the immutable fields for db_test_user
+create trigger immutable_columns
+before
+update on db_test_user
+        for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before
+insert on db_test_user 
+        for each row execute procedure default_create_time();
+
+create trigger update_version_column
+after update on db_test_user
+        for each row execute procedure update_version_column();
+
+create table if not exists db_test_car (
+        public_id wt_public_id constraint db_test_car_pkey primary key,
+        create_time wt_timestamp,
+        update_time wt_timestamp,
+        name text unique,
+        model text,
+        mpg smallint
+);
+        
+create trigger update_time_column 
+before 
+update on db_test_car 
+        for each row execute procedure update_time_column();
+
+-- define the immutable fields for db_test_car
+create trigger immutable_columns
+before
+update on db_test_car
+        for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before
+insert on db_test_car
+        for each row execute procedure default_create_time();
+
+        
+create table if not exists db_test_rental (
+        user_id wt_public_id not null references db_test_user(public_id),
+        car_id wt_public_id not null references db_test_car(public_id),
+        create_time wt_timestamp,
+        update_time wt_timestamp,
+        name text unique,
+        version wt_version,
+        constraint db_test_rental_pkey primary key(user_id, car_id)
+);
+        
+create trigger update_time_column 
+before 
+update on db_test_rental 
+  for each row execute procedure update_time_column();
+        
+-- define the immutable fields for db_test_rental
+create trigger immutable_columns
+before
+update on db_test_rental
+ for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before
+insert on db_test_rental
+ for each row execute procedure default_create_time();
+
+-- update_version_column() will increment the version column whenever row data
+-- is updated and should only be used in an update after trigger.  This function
+-- will overwrite any explicit updates to the version column. The function
+-- accepts an optional parameter of 'private_id' for the tables primary key.
+create or replace function
+  update_rental_version_column()
+  returns trigger
+as $$
+begin
+  if pg_trigger_depth() = 1 then
+    if row(new.*) is distinct from row(old.*) then
+      if tg_nargs = 0 then
+        execute format('update %I set version = $1 where user_id = $2 and car_id = $3', tg_relid::regclass) using old.version+1, new.user_id, new.car_id;
+        new.version = old.version + 1;
+        return new;
+      end if;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger update_version_column
+after update on db_test_rental
+        for each row execute procedure update_rental_version_column();
+
+create table if not exists db_test_scooter (
+        private_id wt_private_id constraint db_test_scooter_pkey primary key,
+        create_time wt_timestamp,
+        update_time wt_timestamp,
+        name text unique,
+        model text,
+        mpg smallint
+);
+
+create trigger update_time_column 
+before update on db_test_scooter 
+        for each row execute procedure update_time_column();
+
+
+-- define the immutable fields for db_test_scooter
+create trigger immutable_columns
+before update on db_test_scooter
+        for each row execute procedure immutable_columns('create_time');
+
+create trigger default_create_time_column
+before insert on db_test_scooter
+        for each row execute procedure default_create_time();  
+
+commit;
+        `
+
+        testQueryDropTablesSqlite = `
+begin;
+drop table if exists db_test_user;
+drop table if exists db_test_car;
+drop table if exists db_test_rental;
+drop table if exists db_test_scooter;
+commit;
+`
+
+        testQueryDropTablesPostgres = `
+begin;
+drop table if exists db_test_user cascade;
+drop table if exists db_test_car cascade;
+drop table if exists db_test_rental cascade;
+drop table if exists db_test_scooter cascade;
+drop domain if exists wt_public_id;
+drop domain if exists wt_private_id;
+drop domain if exists wt_timestamp;
+drop domain if exists wt_version;
+commit;
+        `
+)
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+)
+
+// Begin will start a transaction
+func (rw *RW) Begin(ctx context.Context) (*RW, error) <span class="cov8" title="1">{
+        const op = "dbw.Begin"
+        newTx := rw.underlying.wrapped.WithContext(ctx)
+        newTx = newTx.Begin()
+        if newTx.Error != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("%s: %w", op, newTx.Error)
+        }</span>
+        <span class="cov8" title="1">return New(
+                &amp;DB{wrapped: newTx},
+        ), nil</span>
+}
+
+// Rollback will rollback the current transaction
+func (rw *RW) Rollback(ctx context.Context) error <span class="cov8" title="1">{
+        const op = "dbw.Rollback"
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if err := db.Rollback().Error; err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Commit will commit a transaction
+func (rw *RW) Commit(ctx context.Context) error <span class="cov8" title="1">{
+        const op = "dbw.Commit"
+        db := rw.underlying.wrapped.WithContext(ctx)
+        if err := db.Commit().Error; err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+package dbw
+
+import (
+        "context"
+        "fmt"
+        "reflect"
+        "sync/atomic"
+
+        "gorm.io/gorm"
+)
+
+var nonUpdateFields atomic.Value
+
+// InitNonUpdatableFields sets the fields which are not updatable using
+// via RW.Update(...)
+func InitNonUpdatableFields(fields []string) <span class="cov8" title="1">{
+        m := make(map[string]struct{}, len(fields))
+        for _, f := range fields </span><span class="cov8" title="1">{
+                m[f] = struct{}{}
+        }</span>
+        <span class="cov8" title="1">nonUpdateFields.Store(m)</span>
+}
+
+// NonUpdatableFields returns the current set of fields which are not updatable using
+// via RW.Update(...)
+func NonUpdatableFields() []string <span class="cov8" title="1">{
+        m := nonUpdateFields.Load()
+        if m == nil </span><span class="cov8" title="1">{
+                return []string{}
+        }</span>
+
+        <span class="cov8" title="1">fields := make([]string, 0, len(m.(map[string]struct{})))
+        for f := range m.(map[string]struct{}) </span><span class="cov8" title="1">{
+                fields = append(fields, f)
+        }</span>
+        <span class="cov8" title="1">return fields</span>
+}
+
+// Update a resource in the db, a fieldMask is required and provides
+// field_mask.proto paths for fields that should be updated. The i interface
+// parameter is the type the caller wants to update in the db and its fields are
+// set to the update values. setToNullPaths is optional and provides
+// field_mask.proto paths for the fields that should be set to null.
+// fieldMaskPaths and setToNullPaths must not intersect. The caller is
+// responsible for the transaction life cycle of the writer and if an error is
+// returned the caller must decide what to do with the transaction, which almost
+// always should be to rollback.  Update returns the number of rows updated.
+//
+// Supported options: WithBeforeWrite, WithAfterWrite, WithWhere, WithDebug,
+// WithTable and WithVersion. If WithVersion is used, then the update will
+// include the version number in the update where clause, which basically makes
+// the update use optimistic locking and the update will only succeed if the
+// existing rows version matches the WithVersion option. Zero is not a valid
+// value for the WithVersion option and will return an error. WithWhere allows
+// specifying an additional constraint on the operation in addition to the PKs.
+// WithDebug will turn on debugging for the update call.
+func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) <span class="cov8" title="1">{
+        const op = "dbw.Update"
+        if rw.underlying == nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if isNil(i) </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: missing interface: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">if err := raiseErrorOnHooks(i); err != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if len(fieldMaskPaths) == 0 &amp;&amp; len(setToNullPaths) == 0 </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: both fieldMaskPaths and setToNullPaths are missing: %w", op, ErrInvalidParameter)
+        }</span>
+        <span class="cov8" title="1">opts := GetOpts(opt...)
+
+        // we need to filter out some non-updatable fields (like: CreateTime, etc)
+        fieldMaskPaths = filterPaths(fieldMaskPaths)
+        setToNullPaths = filterPaths(setToNullPaths)
+        if len(fieldMaskPaths) == 0 &amp;&amp; len(setToNullPaths) == 0 </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: after filtering non-updated fields, there are no fields left in fieldMaskPaths or setToNullPaths: %w", op, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">updateFields, err := UpdateFields(i, fieldMaskPaths, setToNullPaths)
+        if err != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: getting update fields failed: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if len(updateFields) == 0 </span><span class="cov0" title="0">{
+                return noRowsAffected, fmt.Errorf("%s: no fields matched using fieldMaskPaths %s: %w", op, fieldMaskPaths, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">names, isZero, err := rw.primaryFieldsAreZero(ctx, i)
+        if err != nil </span><span class="cov0" title="0">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">if isZero </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: primary key is not set for: %s: %w", op, names, ErrInvalidParameter)
+        }</span>
+
+        <span class="cov8" title="1">mDb := rw.underlying.wrapped.Model(i)
+        err = mDb.Statement.Parse(i)
+        if err != nil || mDb.Statement.Schema == nil </span><span class="cov0" title="0">{
+                return noRowsAffected, fmt.Errorf("%s: internal error: unable to parse stmt: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">reflectValue := reflect.Indirect(reflect.ValueOf(i))
+        for _, pf := range mDb.Statement.Schema.PrimaryFields </span><span class="cov8" title="1">{
+                if _, isZero := pf.ValueOf(ctx, reflectValue); isZero </span><span class="cov0" title="0">{
+                        return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">if contains(fieldMaskPaths, pf.Name) </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: not allowed on primary key field %s: %w", op, pf.Name, ErrInvalidFieldMask)
+                }</span>
+        }
+
+        <span class="cov8" title="1">if !opts.WithSkipVetForWrite </span><span class="cov8" title="1">{
+                if vetter, ok := i.(VetForWriter); ok </span><span class="cov8" title="1">{
+                        if err := vetter.VetForWrite(ctx, rw, UpdateOp, WithFieldMaskPaths(fieldMaskPaths), WithNullPaths(setToNullPaths)); err != nil </span><span class="cov8" title="1">{
+                                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(i); err != nil </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
+        }
+        <span class="cov8" title="1">underlying := rw.underlying.wrapped.Model(i)
+        if opts.WithDebug </span><span class="cov0" title="0">{
+                underlying = underlying.Debug()
+        }</span>
+        <span class="cov8" title="1">if opts.WithTable != "" </span><span class="cov8" title="1">{
+                underlying = underlying.Table(opts.WithTable)
+        }</span>
+        <span class="cov8" title="1">switch </span>{
+        case opts.WithVersion != nil || opts.WithWhereClause != "":<span class="cov8" title="1">
+                where, args, err := rw.whereClausesFromOpts(ctx, i, opts)
+                if err != nil </span><span class="cov8" title="1">{
+                        return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+                }</span>
+                <span class="cov8" title="1">underlying = underlying.Where(where, args...).Updates(updateFields)</span>
+        default:<span class="cov8" title="1">
+                underlying = underlying.Updates(updateFields)</span>
+        }
+        <span class="cov8" title="1">if underlying.Error != nil </span><span class="cov8" title="1">{
+                if underlying.Error == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return noRowsAffected, fmt.Errorf("%s: %w", op, gorm.ErrRecordNotFound)
+                }</span>
+                <span class="cov8" title="1">return noRowsAffected, fmt.Errorf("%s: %w", op, underlying.Error)</span>
+        }
+        <span class="cov8" title="1">rowsUpdated := int(underlying.RowsAffected)
+        if rowsUpdated &gt; 0 &amp;&amp; (opts.WithAfterWrite != nil) </span><span class="cov8" title="1">{
+                if err := opts.WithAfterWrite(i, rowsUpdated); err != nil </span><span class="cov8" title="1">{
+                        return rowsUpdated, fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
+        }
+        // we need to force a lookupAfterWrite so the resource returned is correctly initialized
+        // from the db
+        <span class="cov8" title="1">opt = append(opt, WithLookup(true))
+        if err := rw.lookupAfterWrite(ctx, i, opt...); err != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+        }</span>
+        <span class="cov8" title="1">return rowsUpdated, nil</span>
+}
+
+// filterPaths will filter out non-updatable fields
+func filterPaths(paths []string) []string <span class="cov8" title="1">{
+        if len(paths) == 0 </span><span class="cov8" title="1">{
+                return nil
+        }</span>
+        <span class="cov8" title="1">nonUpdatable := NonUpdatableFields()
+        if len(nonUpdatable) == 0 </span><span class="cov0" title="0">{
+                return paths
+        }</span>
+        <span class="cov8" title="1">var filtered []string
+        for _, p := range paths </span><span class="cov8" title="1">{
+                switch </span>{
+                case contains(nonUpdatable, p):<span class="cov8" title="1">
+                        continue</span>
+                default:<span class="cov8" title="1">
+                        filtered = append(filtered, p)</span>
+                }
+        }
+        <span class="cov8" title="1">return filtered</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

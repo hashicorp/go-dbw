@@ -33,6 +33,10 @@ jobs:
       - name: Tests
         run: make test-sqlite
 
+      - name: Coverage
+        run: |
+          make coverage-diff
+
   postgres:
     strategy:
       matrix:

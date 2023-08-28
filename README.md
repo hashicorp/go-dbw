@@ -1,5 +1,7 @@
 # dbw package
 [![Go Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-dbw.svg)](https://pkg.go.dev/github.com/hashicorp/go-dbw)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hashicorp/go-dbw)](https://goreportcard.com/report/github.com/hashicorp/go-dbw)
+[![Go Coverage](https://raw.githack.com/hashicorp/go-dbw/main/coverage/coverage.svg)](https://raw.githack.com/hashicorp/go-dbw/main/coverage/coverage.html)
 
 [dbw](https://pkg.go.dev/github.com/hashicorp/go-dbw) is a database wrapper that 
 supports connecting and using any database with a
