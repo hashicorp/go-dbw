@@ -238,6 +238,7 @@ func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{})
 	}
 	return nil
 }
+
 func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string

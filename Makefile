@@ -9,10 +9,20 @@ REPO_PATH := github.com/hashicorp/dbw
 .PHONY: tools
 tools:
 	go generate -tags tools tools/tools.go
+	go install github.com/bufbuild/buf/cmd/buf@v1.15.1
+	go install github.com/hashicorp/copywrite@v0.15.0
 
 .PHONY: fmt
 fmt:
-	gofumpt -w $$(find . -name '*.go' | grep -v pb.go)
+	gofumpt -w $$(find . -name '*.go' ! -name '*pb.go')
+	buf format -w
+
+.PHONY: copywrite
+copywrite:
+	copywrite headers
+
+.PHONY: gen
+gen: proto fmt copywrite
 
 .PHONY: test
 test: 
@@ -39,11 +49,7 @@ proto: protolint protobuild
 
 .PHONY: protobuild
 protobuild:
-	protoc \
-	./internal/proto/local/dbtest/storage/v1/dbtest.proto \
-	--proto_path=internal/proto/local \
-	--go_out=:.
-	
+	buf generate
 	@protoc-go-inject-tag -input=./internal/dbtest/dbtest.pb.go
 
 .PHONY: protolint

@@ -7,9 +7,10 @@ syntax = "proto3";
 // are only used for unit tests and are not part of the rest of the domain model
 
 package dbtest.storage.v1;
-option go_package = "internal/dbtest;dbtest";
 
 import "google/protobuf/timestamp.proto";
+
+option go_package = "internal/dbtest;dbtest";
 
 // Timestamp for storage messages.  We've defined a new local type wrapper
 // of google.protobuf.Timestamp so we can implement sql.Scanner and sql.Valuer
