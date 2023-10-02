@@ -119,8 +119,7 @@ func TestOpen(t *testing.T) {
 			rows, err := rw.Query(context.Background(), "PRAGMA foreign_keys", nil)
 			require.NoError(err)
 			require.True(rows.Next())
-			type foo struct {
-			}
+			type foo struct{}
 			f := struct {
 				ForeignKeys int
 			}{}
