@@ -61,7 +61,7 @@
 				
 				<option value="file2">github.com/hashicorp/go-dbw/common.go (97.6%)</option>
 				
-				<option value="file3">github.com/hashicorp/go-dbw/create.go (93.8%)</option>
+				<option value="file3">github.com/hashicorp/go-dbw/create.go (92.0%)</option>
 				
 				<option value="file4">github.com/hashicorp/go-dbw/db.go (91.8%)</option>
 				
@@ -77,7 +77,7 @@
 				
 				<option value="file10">github.com/hashicorp/go-dbw/query.go (95.2%)</option>
 				
-				<option value="file11">github.com/hashicorp/go-dbw/rw.go (93.0%)</option>
+				<option value="file11">github.com/hashicorp/go-dbw/rw.go (93.6%)</option>
 				
 				<option value="file12">github.com/hashicorp/go-dbw/testing.go (66.4%)</option>
 				
@@ -204,9 +204,11 @@ func (ev *ExprValue) toAssignment(column string) clause.Assignment <span class="
 // column values for database operations. See: Expr(...)
 //
 // Set name column to null example:
+//
 //        SetColumnValues(map[string]interface{}{"name": Expr("NULL")})
 //
 // Set exp_time column to N seconds from now:
+//
 //        SetColumnValues(map[string]interface{}{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
 func Expr(expr string, args ...interface{}) ExprValue <span class="cov8" title="1">{
         return ExprValue{Sql: expr, Vars: args}
@@ -244,7 +246,6 @@ func SetColumns(names []string) []ColumnValue <span class="cov8" title="1">{
 // OnConflict specifies how to handle alternative actions to take when an insert
 // results in a unique constraint or exclusion constraint error.
 type OnConflict struct {
-
         // Target specifies what conflict you want to define a policy for.  This can
         // be any one of these:
         //        Columns: the name of a specific column or columns
@@ -468,6 +469,11 @@ const (
 
         // DeleteOp is a delete operation
         DeleteOp OpType = 3
+
+        // DefaultBatchSize is the default batch size for bulk operations like
+        // CreateItems. This value is used if the caller does not specify a size
+        // using the WithBatchSize(...) option.
+        DefaultBatchSize = 100
 )
 
 // VetForWriter provides an interface that Create and Update can use to vet the
@@ -624,59 +630,141 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error <s
 }
 
 // CreateItems will create multiple items of the same type. Supported options:
-// WithDebug, WithBeforeWrite, WithAfterWrite, WithReturnRowsAffected,
-// OnConflict, WithVersion, WithTable, and WithWhere. WithLookup is not a supported option.
-func (rw *RW) CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error <span class="cov8" title="1">{
+// WithBatchSize, WithDebug, WithBeforeWrite, WithAfterWrite,
+// WithReturnRowsAffected, OnConflict, WithVersion, WithTable, and WithWhere.
+// WithLookup is not a supported option.
+func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.CreateItems"
-        if rw.underlying == nil </span><span class="cov8" title="1">{
-                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
-        }</span>
-        <span class="cov8" title="1">if len(createItems) == 0 </span><span class="cov8" title="1">{
-                return fmt.Errorf("%s: missing interfaces: %w", op, ErrInvalidParameter)
-        }</span>
+        switch </span>{
+        case rw.underlying == nil:<span class="cov8" title="1">
+                return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)</span>
+        case isNil(createItems):<span class="cov8" title="1">
+                return fmt.Errorf("%s: missing items: %w", op, ErrInvalidParameter)</span>
+        }
+        <span class="cov8" title="1">valCreateItems := reflect.ValueOf(createItems)
+        switch </span>{
+        case valCreateItems.Kind() != reflect.Slice:<span class="cov8" title="1">
+                return fmt.Errorf("%s: not a slice: %w", op, ErrInvalidParameter)</span>
+        case valCreateItems.Len() == 0:<span class="cov8" title="1">
+                return fmt.Errorf("%s: missing items: %w", op, ErrInvalidParameter)</span>
+        }
         <span class="cov8" title="1">if err := raiseErrorOnHooks(createItems); err != nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("%s: %w", op, err)
         }</span>
         <span class="cov8" title="1">opts := GetOpts(opt...)
-        if opts.WithLookup </span><span class="cov8" title="1">{
-                return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
-        }</span>
-        // verify that createItems are all the same type.
+        switch </span>{
+        case opts.WithLookup:<span class="cov8" title="1">
+                return fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)</span>
+        }
         <span class="cov8" title="1">var foundType reflect.Type
-        for i, v := range createItems </span><span class="cov8" title="1">{
+        for i := 0; i &lt; valCreateItems.Len(); i++ </span><span class="cov8" title="1">{
+                // verify that createItems are all the same type and do some bits on each item
                 if i == 0 </span><span class="cov8" title="1">{
-                        foundType = reflect.TypeOf(v)
+                        foundType = reflect.TypeOf(valCreateItems.Index(i).Interface())
                 }</span>
-                <span class="cov8" title="1">currentType := reflect.TypeOf(v)
-                if foundType != currentType </span><span class="cov8" title="1">{
+                <span class="cov8" title="1">currentType := reflect.TypeOf(valCreateItems.Index(i).Interface())
+                if currentType == nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: unable to determine type of item %d: %w", op, i, ErrInvalidParameter)
+                }</span>
+                <span class="cov8" title="1">if foundType != currentType </span><span class="cov8" title="1">{
                         return fmt.Errorf("%s: create items contains disparate types. item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
                 }</span>
+
+                // these fields should be nil, since they are not writeable and we want the
+                // db to manage them
+                <span class="cov8" title="1">setFieldsToNil(valCreateItems.Index(i).Interface(), NonCreatableFields())
+
+                // vet each item
+                if !opts.WithSkipVetForWrite </span><span class="cov8" title="1">{
+                        if vetter, ok := valCreateItems.Index(i).Interface().(VetForWriter); ok </span><span class="cov8" title="1">{
+                                if err := vetter.VetForWrite(ctx, rw, CreateOp); err != nil </span><span class="cov8" title="1">{
+                                        return fmt.Errorf("%s: %w", op, err)
+                                }</span>
+                        }
+                }
+
+                <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                        if err := opts.WithBeforeWrite(valCreateItems.Index(i).Interface()); err != nil </span><span class="cov8" title="1">{
+                                return fmt.Errorf("%s: error before write: %w", op, err)
+                        }</span>
+                }
         }
-        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
-                if err := opts.WithBeforeWrite(createItems); err != nil </span><span class="cov8" title="1">{
-                        return fmt.Errorf("%s: error before write: %w", op, err)
-                }</span>
+
+        <span class="cov8" title="1">db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithOnConflict != nil </span><span class="cov8" title="1">{
+                c := clause.OnConflict{}
+                switch opts.WithOnConflict.Target.(type) </span>{
+                case Constraint:<span class="cov0" title="0">
+                        c.OnConstraint = string(opts.WithOnConflict.Target.(Constraint))</span>
+                case Columns:<span class="cov8" title="1">
+                        columns := make([]clause.Column, 0, len(opts.WithOnConflict.Target.(Columns)))
+                        for _, name := range opts.WithOnConflict.Target.(Columns) </span><span class="cov8" title="1">{
+                                columns = append(columns, clause.Column{Name: name})
+                        }</span>
+                        <span class="cov8" title="1">c.Columns = columns</span>
+                default:<span class="cov8" title="1">
+                        return fmt.Errorf("%s: invalid conflict target %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Target), ErrInvalidParameter)</span>
+                }
+
+                <span class="cov8" title="1">switch opts.WithOnConflict.Action.(type) </span>{
+                case DoNothing:<span class="cov8" title="1">
+                        c.DoNothing = true</span>
+                case UpdateAll:<span class="cov8" title="1">
+                        c.UpdateAll = true</span>
+                case []ColumnValue:<span class="cov8" title="1">
+                        updates := opts.WithOnConflict.Action.([]ColumnValue)
+                        set := make(clause.Set, 0, len(updates))
+                        for _, s := range updates </span><span class="cov8" title="1">{
+                                // make sure it's not one of the std immutable columns
+                                if contains([]string{"createtime", "publicid"}, strings.ToLower(s.Column)) </span><span class="cov0" title="0">{
+                                        return fmt.Errorf("%s: cannot do update on conflict for column %s: %w", op, s.Column, ErrInvalidParameter)
+                                }</span>
+                                <span class="cov8" title="1">switch sv := s.Value.(type) </span>{
+                                case Column:<span class="cov8" title="1">
+                                        set = append(set, sv.toAssignment(s.Column))</span>
+                                case ExprValue:<span class="cov8" title="1">
+                                        set = append(set, sv.toAssignment(s.Column))</span>
+                                default:<span class="cov8" title="1">
+                                        set = append(set, rawAssignment(s.Column, s.Value))</span>
+                                }
+                        }
+                        <span class="cov8" title="1">c.DoUpdates = set</span>
+                default:<span class="cov0" title="0">
+                        return fmt.Errorf("%s: invalid conflict action %v: %w", op, reflect.TypeOf(opts.WithOnConflict.Action), ErrInvalidParameter)</span>
+                }
+                <span class="cov8" title="1">if opts.WithVersion != nil || opts.WithWhereClause != "" </span><span class="cov8" title="1">{
+                        // this is a bit of a hack, but we need to pass in one of the items
+                        // to get the where clause since we need to get the gorm Model and
+                        // Parse the gorm statement to build the where clause
+                        where, args, err := rw.whereClausesFromOpts(ctx, valCreateItems.Index(0).Interface(), opts)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return fmt.Errorf("%s: %w", op, err)
+                        }</span>
+                        <span class="cov8" title="1">whereConditions := db.Statement.BuildCondition(where, args...)
+                        c.Where = clause.Where{Exprs: whereConditions}</span>
+                }
+                <span class="cov8" title="1">db = db.Clauses(c)</span>
         }
-        <span class="cov8" title="1">var rowsAffected int64
-        for _, item := range createItems </span><span class="cov8" title="1">{
-                if err := rw.Create(ctx, item,
-                        WithOnConflict(opts.WithOnConflict),
-                        WithReturnRowsAffected(&amp;rowsAffected),
-                        WithDebug(opts.WithDebug),
-                        WithVersion(opts.WithVersion),
-                        WithWhere(opts.WithWhereClause, opts.WithWhereClauseArgs...),
-                        WithTable(opts.WithTable),
-                ); err != nil </span><span class="cov8" title="1">{
-                        return fmt.Errorf("%s: %w", op, err)
-                }</span>
-        }
-        <span class="cov8" title="1">if opts.WithRowsAffected != nil </span><span class="cov8" title="1">{
-                *opts.WithRowsAffected = rowsAffected
+        <span class="cov8" title="1">if opts.WithDebug </span><span class="cov0" title="0">{
+                db = db.Debug()
         }</span>
-        <span class="cov8" title="1">if opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
-                if err := opts.WithAfterWrite(createItems, int(rowsAffected)); err != nil </span><span class="cov8" title="1">{
-                        return fmt.Errorf("%s: error after write: %w", op, err)
-                }</span>
+        <span class="cov8" title="1">if opts.WithTable != "" </span><span class="cov8" title="1">{
+                db = db.Table(opts.WithTable)
+        }</span>
+
+        <span class="cov8" title="1">tx := db.CreateInBatches(createItems, opts.WithBatchSize)
+        if tx.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("%s: create failed: %w", op, tx.Error)
+        }</span>
+        <span class="cov8" title="1">if opts.WithRowsAffected != nil </span><span class="cov8" title="1">{
+                *opts.WithRowsAffected = tx.RowsAffected
+        }</span>
+        <span class="cov8" title="1">if tx.RowsAffected &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+                for i := 0; i &lt; valCreateItems.Len(); i++ </span><span class="cov8" title="1">{
+                        if err := opts.WithAfterWrite(valCreateItems.Index(i).Interface(), int(tx.RowsAffected)); err != nil </span><span class="cov8" title="1">{
+                                return fmt.Errorf("%s: error after write: %w", op, err)
+                        }</span>
+                }
         }
         <span class="cov8" title="1">return nil</span>
 }
@@ -755,7 +843,7 @@ import (
         "github.com/hashicorp/go-hclog"
         "github.com/jackc/pgconn"
 
-        _ "github.com/jackc/pgx/v4" // required to load postgres drivers
+        _ "github.com/jackc/pgx/v5" // required to load postgres drivers
         "gorm.io/driver/postgres"
         "gorm.io/driver/sqlite"
 
@@ -1404,6 +1492,10 @@ type Options struct {
         // operation.
         WithTable string
 
+        // WithBatchSize specifies an option for setting the batch size for bulk
+        // operations. If WithBatchSize == 0, then the default batch size is used.
+        WithBatchSize int
+
         withLogLevel LogLevel
 }
 
@@ -1411,6 +1503,7 @@ func getDefaultOptions() Options <span class="cov8" title="1">{
         return Options{
                 WithFieldMaskPaths: []string{},
                 WithNullPaths:      []string{},
+                WithBatchSize:      DefaultBatchSize,
                 withLogLevel:       Error,
         }
 }</span>
@@ -1570,6 +1663,15 @@ func WithLogLevel(l LogLevel) Option <span class="cov8" title="1">{
                 o.withLogLevel = l
         }</span>
 }
+
+// WithBatchSize specifies an option for setting the batch size for bulk
+// operations like CreateItems. If WithBatchSize == 0, the default batch size is
+// used (see DefaultBatchSize const).
+func WithBatchSize(size int) Option <span class="cov8" title="1">{
+        return func(o *Options) </span><span class="cov8" title="1">{
+                o.WithBatchSize = size
+        }</span>
+}
 </pre>
 		
 		<pre class="file" id="file10" style="display: none">// Copyright (c) HashiCorp, Inc.
@@ -1716,7 +1818,7 @@ func isNil(i interface{}) bool <span class="cov8" title="1">{
         case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:<span class="cov8" title="1">
                 return reflect.ValueOf(i).IsNil()</span>
         }
-        <span class="cov0" title="0">return false</span>
+        <span class="cov8" title="1">return false</span>
 }
 
 func contains(ss []string, t string) bool <span class="cov8" title="1">{
@@ -1863,6 +1965,7 @@ func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{})
         }
         <span class="cov8" title="1">return nil</span>
 }
+
 func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) <span class="cov8" title="1">{
         const op = "dbw.primaryKeysWhere"
         var fieldNames []string
