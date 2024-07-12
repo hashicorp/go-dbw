@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgconn"
 
-	_ "github.com/jackc/pgx/v4" // required to load postgres drivers
+	_ "github.com/jackc/pgx/v5" // required to load postgres drivers
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 
