@@ -46,7 +46,7 @@ func (rw *RW) DB() *DB {
 
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. The WithDebug option is supported.
-func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error) {
+func (rw *RW) Exec(ctx context.Context, sql string, values []any, opt ...Option) (int, error) {
 	const op = "dbw.Exec"
 	if rw.underlying == nil {
 		return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -66,7 +66,7 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ..
 	return int(db.RowsAffected), nil
 }
 
-func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) {
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i any) ([]string, bool, error) {
 	const op = "dbw.primaryFieldsAreZero"
 	var fieldNames []string
 	tx := rw.underlying.wrapped.Model(i)
@@ -83,7 +83,7 @@ func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string
 	return fieldNames, len(fieldNames) > 0, nil
 }
 
-func isNil(i interface{}) bool {
+func isNil(i any) bool {
 	if i == nil {
 		return true
 	}
@@ -103,7 +103,7 @@ func contains(ss []string, t string) bool {
 	return false
 }
 
-func validateResourcesInterface(resources interface{}) error {
+func validateResourcesInterface(resources any) error {
 	const op = "dbw.validateResourcesInterface"
 	vo := reflect.ValueOf(resources)
 	if vo.Kind() != reflect.Ptr {
@@ -118,7 +118,7 @@ func validateResourcesInterface(resources interface{}) error {
 	return nil
 }
 
-func raiseErrorOnHooks(i interface{}) error {
+func raiseErrorOnHooks(i any) error {
 	const op = "dbw.raiseErrorOnHooks"
 	v := i
 	valOf := reflect.ValueOf(i)
@@ -166,10 +166,10 @@ func (rw *RW) IsTx() bool {
 	}
 }
 
-func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Options) (string, []interface{}, error) {
+func (rw *RW) whereClausesFromOpts(_ context.Context, i any, opts Options) (string, []any, error) {
 	const op = "dbw.whereClausesFromOpts"
 	var where []string
-	var args []interface{}
+	var args []any
 	if opts.WithVersion != nil {
 		if *opts.WithVersion == 0 {
 			return "", nil, fmt.Errorf("%s: with version option is zero: %w", op, ErrInvalidParameter)
@@ -207,7 +207,7 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 // clearDefaultNullResourceFields will clear fields in the resource which are
 // defaulted to a null value.  This addresses the unfixed issue in gorm:
 // https://github.com/go-gorm/gorm/issues/6351
-func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{}) error {
+func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i any) error {
 	const op = "dbw.ClearResourceFields"
 	stmt := rw.underlying.wrapped.Model(i).Statement
 	if err := stmt.Parse(i); err != nil {
@@ -239,10 +239,10 @@ func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{})
 	return nil
 }
 
-func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) {
+func (rw *RW) primaryKeysWhere(ctx context.Context, i any) (string, []any, error) {
 	const op = "dbw.primaryKeysWhere"
 	var fieldNames []string
-	var fieldValues []interface{}
+	var fieldValues []any
 	tx := rw.underlying.wrapped.Model(i)
 	if err := tx.Statement.Parse(i); err != nil {
 		return "", nil, fmt.Errorf("%s: %w", op, err)
@@ -252,13 +252,13 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 		if resourceType.GetPublicId() == "" {
 			return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
 		}
-		fieldValues = []interface{}{resourceType.GetPublicId()}
+		fieldValues = []any{resourceType.GetPublicId()}
 		fieldNames = []string{"public_id"}
 	case ResourcePrivateIder:
 		if resourceType.GetPrivateId() == "" {
 			return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
 		}
-		fieldValues = []interface{}{resourceType.GetPrivateId()}
+		fieldValues = []any{resourceType.GetPrivateId()}
 		fieldNames = []string{"private_id"}
 	default:
 		v := reflect.ValueOf(i)
@@ -286,7 +286,7 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 // LookupWhere will lookup the first resource using a where clause with
 // parameters (it only returns the first one). Supports WithDebug, and
 // WithTable options.
-func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error {
+func (rw *RW) LookupWhere(ctx context.Context, resource any, where string, args []any, opt ...Option) error {
 	const op = "dbw.LookupWhere"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -321,7 +321,7 @@ func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where strin
 // Supports WithTable and WithLimit options.  If WithLimit < 0, then unlimited results are returned.
 // If WithLimit == 0, then default limits are used for results.
 // Supports the WithOrder, WithTable, and WithDebug options.
-func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error {
+func (rw *RW) SearchWhere(ctx context.Context, resources any, where string, args []any, opt ...Option) error {
 	const op = "dbw.SearchWhere"
 	opts := GetOpts(opt...)
 	if rw.underlying == nil {

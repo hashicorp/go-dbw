@@ -39,7 +39,7 @@ onConflict := dbw.OnConflict{
 cv := dbw.SetColumns([]string{"name"})
 cv = append(
     cv,
-	dbw.SetColumnValues(map[string]interface{}{
+	dbw.SetColumnValues(map[string]any{
 	"email":        "alice@gmail.com",
 	"phone_number": dbw.Expr("NULL"),
 })...)

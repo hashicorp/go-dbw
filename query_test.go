@@ -27,13 +27,13 @@ func TestDb_Query(t *testing.T) {
 		rw := dbw.New(conn)
 		publicId, err := dbw.NewId("u")
 		require.NoError(err)
-		rowsAffected, err := rw.Exec(testCtx, insert, []interface{}{
+		rowsAffected, err := rw.Exec(testCtx, insert, []any{
 			sql.Named("public_id", publicId),
 			sql.Named("name", "alice"),
 		})
 		require.NoError(err)
 		require.Equal(1, rowsAffected)
-		rows, err := rw.Query(testCtx, query, []interface{}{"alice", "bob"}, dbw.WithDebug(true))
+		rows, err := rw.Query(testCtx, query, []any{"alice", "bob"}, dbw.WithDebug(true))
 		require.NoError(err)
 		defer func() { err := rows.Close(); assert.NoError(err) }()
 		for rows.Next() {
@@ -81,7 +81,7 @@ func TestDb_ScanRows(t *testing.T) {
 		require.NoError(err)
 		assert.NotEmpty(user.PublicId)
 		where := "select * from db_test_user where name in (?, ?)"
-		rows, err := rw.Query(context.Background(), where, []interface{}{"alice", "bob"})
+		rows, err := rw.Query(context.Background(), where, []any{"alice", "bob"})
 		require.NoError(err)
 		defer func() { err := rows.Close(); assert.NoError(err) }()
 		for rows.Next() {

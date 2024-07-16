@@ -21,10 +21,10 @@ func TestRW_whereClausesFromOpts(t *testing.T) {
 	tests := []struct {
 		name      string
 		rw        *RW
-		i         interface{}
+		i         any
 		opts      Options
 		wantWhere string
-		wantArgs  []interface{}
+		wantArgs  []any
 		wantErr   bool
 	}{
 		{
@@ -37,7 +37,7 @@ func TestRW_whereClausesFromOpts(t *testing.T) {
 				WithOnConflict: &OnConflict{},
 			},
 			wantWhere: "test_table.version = ?",
-			wantArgs:  []interface{}{func() *uint32 { i := uint32(1); return &i }()},
+			wantArgs:  []any{func() *uint32 { i := uint32(1); return &i }()},
 		},
 		{
 			name: "with-version-with-table",
@@ -48,7 +48,7 @@ func TestRW_whereClausesFromOpts(t *testing.T) {
 				WithTable:   "test_table",
 			},
 			wantWhere: "version = ?",
-			wantArgs:  []interface{}{func() *uint32 { i := uint32(1); return &i }()},
+			wantArgs:  []any{func() *uint32 { i := uint32(1); return &i }()},
 		},
 	}
 
@@ -73,7 +73,7 @@ func Test_validateResourcesInterface(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name            string
-		resources       interface{}
+		resources       any
 		wantErr         bool
 		wantErrContains string
 	}{
@@ -98,7 +98,7 @@ func Test_validateResourcesInterface(t *testing.T) {
 		},
 		{
 			name: "success-ptr",
-			resources: func() interface{} {
+			resources: func() any {
 				s := "s"
 				return &s
 			}(),

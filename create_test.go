@@ -55,7 +55,7 @@ func TestDb_Create(t *testing.T) {
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
 		user.Name = "alice" + id
-		fn := func(i interface{}) error {
+		fn := func(i any) error {
 			u, ok := i.(*dbtest.TestUser)
 			require.True(ok)
 			u.Name = "before" + id
@@ -78,7 +78,7 @@ func TestDb_Create(t *testing.T) {
 		assert.Equal(foundUser.PublicId, user.PublicId)
 		assert.Equal("before"+id, foundUser.Name)
 
-		fn = func(i interface{}) error {
+		fn = func(i any) error {
 			return errors.New("fail")
 		}
 		err = w.Create(
@@ -96,12 +96,12 @@ func TestDb_Create(t *testing.T) {
 		user, err := dbtest.NewTestUser()
 		require.NoError(err)
 		user.Name = "alice" + id
-		fn := func(i interface{}, rowAffected int) error {
+		fn := func(i any, rowAffected int) error {
 			u, ok := i.(*dbtest.TestUser)
 			require.True(ok)
 			rowsAffected, err := w.Exec(testCtx,
 				"update db_test_user set name = @name where public_id = @public_id",
-				[]interface{}{
+				[]any{
 					sql.Named("name", "after"+id),
 					sql.Named("public_id", u.PublicId),
 				})
@@ -129,7 +129,7 @@ func TestDb_Create(t *testing.T) {
 		assert.Equal(foundUser.PublicId, user.PublicId)
 		assert.Equal("after"+id, foundUser.Name)
 
-		fn = func(i interface{}, rowsAffected int) error {
+		fn = func(i any, rowsAffected int) error {
 			return errors.New("fail")
 		}
 
@@ -169,7 +169,7 @@ func TestDb_Create(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"before-create", &dbtest.TestWithBeforeCreate{}},
 			{"after-create", &dbtest.TestWithAfterCreate{}},
@@ -283,7 +283,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 			name: "set-column-values",
 			onConflict: dbw.OnConflict{
 				Target: dbw.Columns{"public_id"},
-				Action: dbw.SetColumnValues(map[string]interface{}{
+				Action: dbw.SetColumnValues(map[string]any{
 					"name":         dbw.Expr("lower(?)", "alice eve smith"),
 					"email":        "alice@gmail.com",
 					"phone_number": dbw.Expr("NULL"),
@@ -300,7 +300,7 @@ func TestDb_Create_OnConflict(t *testing.T) {
 				}
 				cv := dbw.SetColumns([]string{"name"})
 				cv = append(cv,
-					dbw.SetColumnValues(map[string]interface{}{
+					dbw.SetColumnValues(map[string]any{
 						"email":        "alice@gmail.com",
 						"phone_number": dbw.Expr("NULL"),
 					})...)
@@ -484,7 +484,7 @@ func TestDb_CreateItems(t *testing.T) {
 	testWithTableUser, err := dbtest.NewTestUser()
 	require.NoError(t, err)
 
-	createFn := func() interface{} {
+	createFn := func() any {
 		results := []*dbtest.TestUser{}
 		for i := 0; i < 10; i++ {
 			u, err := dbtest.NewTestUser()
@@ -493,31 +493,31 @@ func TestDb_CreateItems(t *testing.T) {
 		}
 		return results
 	}
-	createMixedFn := func() []interface{} {
+	createMixedFn := func() []any {
 		u, err := dbtest.NewTestUser()
 		require.NoError(t, err)
 		c, err := dbtest.NewTestCar()
 		require.NoError(t, err)
-		return []interface{}{
+		return []any{
 			u,
 			c,
 		}
 	}
-	successBeforeFn := func(_ interface{}) error {
+	successBeforeFn := func(_ any) error {
 		return nil
 	}
-	successAfterFn := func(_ interface{}, _ int) error {
+	successAfterFn := func(_ any, _ int) error {
 		return nil
 	}
 	errFailedFn := errors.New("fail")
-	failedBeforeFn := func(_ interface{}) error {
+	failedBeforeFn := func(_ any) error {
 		return errFailedFn
 	}
-	failedAfterFn := func(_ interface{}, _ int) error {
+	failedAfterFn := func(_ any, _ int) error {
 		return errFailedFn
 	}
 	type args struct {
-		createItems interface{}
+		createItems any
 		opt         []dbw.Option
 	}
 	tests := []struct {
@@ -612,7 +612,7 @@ func TestDb_CreateItems(t *testing.T) {
 			name: "empty items",
 			rw:   testRw,
 			args: args{
-				createItems: []interface{}{},
+				createItems: []any{},
 			},
 			wantErr:   true,
 			wantErrIs: dbw.ErrInvalidParameter,
@@ -661,7 +661,7 @@ func TestDb_CreateItems(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name        string
-			resource    interface{}
+			resource    any
 			errContains string
 		}{
 			{"before-create", &dbtest.TestWithBeforeCreate{}, "gorm callback/hooks are not supported"},
@@ -674,7 +674,7 @@ func TestDb_CreateItems(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				assert, require := assert.New(t), require.New(t)
 				w := dbw.New(conn)
-				err := w.CreateItems(context.Background(), []interface{}{tt.resource})
+				err := w.CreateItems(context.Background(), []any{tt.resource})
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrInvalidParameter)
 				assert.Contains(err.Error(), tt.errContains)
@@ -822,7 +822,7 @@ func TestDb_CreateItems_OnConflict(t *testing.T) {
 			name: "with-expr-default",
 			onConflict: dbw.OnConflict{
 				Target: dbw.Columns{"public_id"},
-				Action: dbw.SetColumnValues(map[string]interface{}{
+				Action: dbw.SetColumnValues(map[string]any{
 					"name":         dbw.Expr("lower(?)", "test with expr and default "),
 					"email":        "alice@gmail.com",
 					"phone_number": dbw.Expr("NULL"),

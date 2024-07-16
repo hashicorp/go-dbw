@@ -161,7 +161,7 @@ type ColumnValue struct {
         // Column name
         Column string
         // Value is the column's value
-        Value interface{}
+        Value any
 }
 
 // Column represents a table Column
@@ -179,7 +179,7 @@ func (c *Column) toAssignment(column string) clause.Assignment <span class="cov8
         }
 }</span>
 
-func rawAssignment(column string, value interface{}) clause.Assignment <span class="cov8" title="1">{
+func rawAssignment(column string, value any) clause.Assignment <span class="cov8" title="1">{
         return clause.Assignment{
                 Column: clause.Column{Name: column},
                 Value:  value,
@@ -190,7 +190,7 @@ func rawAssignment(column string, value interface{}) clause.Assignment <span cla
 // Expr(...) to create these values.
 type ExprValue struct {
         Sql  string
-        Vars []interface{}
+        Vars []any
 }
 
 func (ev *ExprValue) toAssignment(column string) clause.Assignment <span class="cov8" title="1">{
@@ -205,18 +205,18 @@ func (ev *ExprValue) toAssignment(column string) clause.Assignment <span class="
 //
 // Set name column to null example:
 //
-//        SetColumnValues(map[string]interface{}{"name": Expr("NULL")})
+//        SetColumnValues(map[string]any{"name": Expr("NULL")})
 //
 // Set exp_time column to N seconds from now:
 //
-//        SetColumnValues(map[string]interface{}{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
-func Expr(expr string, args ...interface{}) ExprValue <span class="cov8" title="1">{
+//        SetColumnValues(map[string]any{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
+func Expr(expr string, args ...any) ExprValue <span class="cov8" title="1">{
         return ExprValue{Sql: expr, Vars: args}
 }</span>
 
 // SetColumnValues defines a map from column names to values for database
 // operations.
-func SetColumnValues(columnValues map[string]interface{}) []ColumnValue <span class="cov8" title="1">{
+func SetColumnValues(columnValues map[string]any) []ColumnValue <span class="cov8" title="1">{
         keys := make([]string, 0, len(columnValues))
         for key := range columnValues </span><span class="cov8" title="1">{
                 keys = append(keys, key)
@@ -250,14 +250,14 @@ type OnConflict struct {
         // be any one of these:
         //        Columns: the name of a specific column or columns
         //  Constraint: the name of a unique constraint
-        Target interface{}
+        Target any
 
         // Action specifies the action to take on conflict. This can be any one of
         // these:
         //        DoNothing: leaves the conflicting record as-is
         //  UpdateAll: updates all the columns of the conflicting record using the resource's data
         //  []ColumnValue: update a set of columns of the conflicting record using the set of assignments
-        Action interface{}
+        Action any
 }
 
 // Constraint defines database constraint name
@@ -291,7 +291,7 @@ import (
 // sent to the db.  The map keys will be the field names for the fields to be
 // updated.  The caller provided fieldMaskPaths and setToNullPaths must not
 // intersect.  fieldMaskPaths and setToNullPaths cannot both be zero len.
-func UpdateFields(i interface{}, fieldMaskPaths []string, setToNullPaths []string) (map[string]interface{}, error) <span class="cov8" title="1">{
+func UpdateFields(i any, fieldMaskPaths []string, setToNullPaths []string) (map[string]any, error) <span class="cov8" title="1">{
         const op = "dbw.UpdateFields"
         if i == nil </span><span class="cov8" title="1">{
                 return nil, fmt.Errorf("%s: interface is missing: %w", op, ErrInvalidParameter)
@@ -314,7 +314,7 @@ func UpdateFields(i interface{}, fieldMaskPaths []string, setToNullPaths []strin
                 return nil, fmt.Errorf("%s: fieldMashPaths and setToNullPaths cannot intersect: %w", op, ErrInvalidParameter)
         }</span>
 
-        <span class="cov8" title="1">updateFields := map[string]interface{}{} // case sensitive update fields to values
+        <span class="cov8" title="1">updateFields := map[string]any{} // case sensitive update fields to values
 
         found := map[string]struct{}{} // we need something to keep track of found fields (case insensitive)
 
@@ -419,7 +419,7 @@ func Intersection(av, bv []string) ([]string, map[string]string, map[string]stri
 // BuildUpdatePaths takes a map of field names to field values, field masks,
 // fields allowed to be zero value, and returns both a list of field names to
 // update and a list of field names that should be set to null.
-func BuildUpdatePaths(fieldValues map[string]interface{}, fieldMask []string, allowZeroFields []string) (masks []string, nulls []string) <span class="cov8" title="1">{
+func BuildUpdatePaths(fieldValues map[string]any, fieldMask []string, allowZeroFields []string) (masks []string, nulls []string) <span class="cov8" title="1">{
         for f, v := range fieldValues </span><span class="cov8" title="1">{
                 if !contains(fieldMask, f) </span><span class="cov8" title="1">{
                         continue</span>
@@ -434,7 +434,7 @@ func BuildUpdatePaths(fieldValues map[string]interface{}, fieldMask []string, al
         <span class="cov8" title="1">return masks, nulls</span>
 }
 
-func isZero(i interface{}) bool <span class="cov8" title="1">{
+func isZero(i any) bool <span class="cov8" title="1">{
         return i == nil || reflect.DeepEqual(i, reflect.Zero(reflect.TypeOf(i)).Interface())
 }</span>
 </pre>
@@ -472,8 +472,15 @@ const (
 
         // DefaultBatchSize is the default batch size for bulk operations like
         // CreateItems. This value is used if the caller does not specify a size
-        // using the WithBatchSize(...) option.
-        DefaultBatchSize = 100
+        // using the WithBatchSize(...) option. Note: some databases have a limit
+        // on the number of query parameters (postgres is currently 64k and sqlite
+        // is 32k) and/or size of a SQL statement (sqlite is currently 1bn bytes),
+        // so this value should be set to a value that is less than the limits for
+        // your target db.
+        // See:
+        //         - https://www.postgresql.org/docs/current/limits.html
+        //        - https://www.sqlite.org/limits.html
+        DefaultBatchSize = 1000
 )
 
 // VetForWriter provides an interface that Create and Update can use to vet the
@@ -523,7 +530,7 @@ func NonCreatableFields() []string <span class="cov8" title="1">{
 // error. WithWhere allows specifying an additional constraint on the on
 // conflict operation in addition to the on conflict target policy (columns or
 // constraint).
-func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) Create(ctx context.Context, i any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.Create"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -633,7 +640,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error <s
 // WithBatchSize, WithDebug, WithBeforeWrite, WithAfterWrite,
 // WithReturnRowsAffected, OnConflict, WithVersion, WithTable, and WithWhere.
 // WithLookup is not a supported option.
-func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) CreateItems(ctx context.Context, createItems any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.CreateItems"
         switch </span>{
         case rw.underlying == nil:<span class="cov8" title="1">
@@ -769,7 +776,7 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
         <span class="cov8" title="1">return nil</span>
 }
 
-func setFieldsToNil(i interface{}, fieldNames []string) <span class="cov8" title="1">{
+func setFieldsToNil(i any, fieldNames []string) <span class="cov8" title="1">{
         // Note: error cases are not handled
         _ = Clear(i, fieldNames, 2)
 }</span>
@@ -780,7 +787,7 @@ func setFieldsToNil(i interface{}, fieldNames []string) <span class="cov8" title
 //
 // A depth of 2 will change i and i's children. A depth of 1 will change i
 // but no children of i. A depth of 0 will return with no changes to i.
-func Clear(i interface{}, fields []string, depth int) error <span class="cov8" title="1">{
+func Clear(i any, fields []string, depth int) error <span class="cov8" title="1">{
         const op = "dbw.Clear"
         if len(fields) == 0 || depth == 0 </span><span class="cov0" title="0">{
                 return nil
@@ -1066,7 +1073,7 @@ type gormLogger struct {
         logger hclog.Logger
 }
 
-func (g gormLogger) Printf(_ string, values ...interface{}) <span class="cov8" title="1">{
+func (g gormLogger) Printf(_ string, values ...any) <span class="cov8" title="1">{
         if len(values) &gt; 1 </span><span class="cov8" title="1">{
                 switch values[1].(type) </span>{
                 case *pgconn.PgError:<span class="cov8" title="1">
@@ -1095,7 +1102,7 @@ import (
 // and WithVersion. WithWhere and WithVersion allows specifying a additional
 // constraints on the operation in addition to the PKs. Delete returns the
 // number of rows deleted and any errors.
-func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+func (rw *RW) Delete(ctx context.Context, i any, opt ...Option) (int, error) <span class="cov8" title="1">{
         const op = "dbw.Delete"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -1153,7 +1160,7 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 
 // DeleteItems will delete multiple items of the same type. Options supported:
 // WithDebug, WithTable
-func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+func (rw *RW) DeleteItems(ctx context.Context, deleteItems []any, opt ...Option) (int, error) <span class="cov8" title="1">{
         const op = "dbw.DeleteItems"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -1245,7 +1252,7 @@ func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, 
 
                 newRW := &amp;RW{underlying: &amp;DB{newTx}}
                 if err := handler(newRW, newRW); err != nil </span><span class="cov8" title="1">{
-                        if err := newTx.Rollback().Error; err != nil </span><span class="cov0" title="0">{
+                        if err := newTx.Rollback().Error; err != nil </span><span class="cov8" title="1">{
                                 return info, fmt.Errorf("%s: %w", op, err)
                         }</span>
                         <span class="cov8" title="1">if retry := retryErrorsMatchingFn(err); retry </span><span class="cov8" title="1">{
@@ -1253,7 +1260,7 @@ func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, 
                                 info.Retries++
                                 info.Backoff = info.Backoff + d
                                 select </span>{
-                                case &lt;-ctx.Done():<span class="cov8" title="1">
+                                case &lt;-ctx.Done():<span class="cov0" title="0">
                                         return info, fmt.Errorf("%s: cancelled: %w", op, err)</span>
                                 case &lt;-time.After(d):<span class="cov8" title="1">
                                         continue</span>
@@ -1329,7 +1336,7 @@ import (
 // primary key for lookup.  Otherwise, the resource tags are used to
 // determine it's primary key(s) for lookup.  The WithDebug and WithTable
 // options are supported.
-func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) LookupBy(ctx context.Context, resourceWithIder any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.LookupById"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -1368,7 +1375,7 @@ func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder,
         return rw.LookupBy(ctx, resource, opt...)
 }</span>
 
-func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) lookupAfterWrite(ctx context.Context, i any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.lookupAfterWrite"
         opts := GetOpts(opt...)
         withLookup := opts.WithLookup
@@ -1414,14 +1421,14 @@ type Option func(*Options)
 // they're available for use by other packages.
 type Options struct {
         // WithBeforeWrite provides and option to provide a func to be called before a
-        // write operation. The i interface{} passed at runtime will be the resource(s)
+        // write operation. The i any passed at runtime will be the resource(s)
         // being written.
-        WithBeforeWrite func(i interface{}) error
+        WithBeforeWrite func(i any) error
 
         // WithAfterWrite provides and option to provide a func to be called after a
-        // write operation.  The i interface{} passed at runtime will be the resource(s)
+        // write operation.  The i any passed at runtime will be the resource(s)
         // being written.
-        WithAfterWrite func(i interface{}, rowsAffected int) error
+        WithAfterWrite func(i any, rowsAffected int) error
 
         // WithLookup enables a lookup after a write operation.
         WithLookup bool
@@ -1454,7 +1461,7 @@ type Options struct {
 
         // WithWhereClauseArgs provides an option to provide a where clause arguments for an
         // operation.
-        WithWhereClauseArgs []interface{}
+        WithWhereClauseArgs []any
 
         // WithOrder provides an option to provide an order when searching and looking
         // up.
@@ -1509,18 +1516,18 @@ func getDefaultOptions() Options <span class="cov8" title="1">{
 }</span>
 
 // WithBeforeWrite provides and option to provide a func to be called before a
-// write operation. The i interface{} passed at runtime will be the resource(s)
+// write operation. The i any passed at runtime will be the resource(s)
 // being written.
-func WithBeforeWrite(fn func(i interface{}) error) Option <span class="cov8" title="1">{
+func WithBeforeWrite(fn func(i any) error) Option <span class="cov8" title="1">{
         return func(o *Options) </span><span class="cov8" title="1">{
                 o.WithBeforeWrite = fn
         }</span>
 }
 
 // WithAfterWrite provides and option to provide a func to be called after a
-// write operation.  The i interface{} passed at runtime will be the resource(s)
+// write operation.  The i any passed at runtime will be the resource(s)
 // being written.
-func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option <span class="cov8" title="1">{
+func WithAfterWrite(fn func(i any, rowsAffected int) error) Option <span class="cov8" title="1">{
         return func(o *Options) </span><span class="cov8" title="1">{
                 o.WithAfterWrite = fn
         }</span>
@@ -1578,7 +1585,7 @@ func WithSkipVetForWrite(enable bool) Option <span class="cov8" title="1">{
 
 // WithWhere provides an option to provide a where clause with arguments for an
 // operation.
-func WithWhere(whereClause string, args ...interface{}) Option <span class="cov8" title="1">{
+func WithWhere(whereClause string, args ...any) Option <span class="cov8" title="1">{
         return func(o *Options) </span><span class="cov8" title="1">{
                 o.WithWhereClause = whereClause
                 o.WithWhereClauseArgs = append(o.WithWhereClauseArgs, args...)
@@ -1689,7 +1696,7 @@ import (
 // operate within the context of any ongoing transaction for the Reader.  The
 // caller must close the returned *sql.Rows. Query can/should be used in
 // combination with ScanRows. The WithDebug option is supported.
-func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, opt ...Option) (*sql.Rows, error) <span class="cov8" title="1">{
+func (rw *RW) Query(ctx context.Context, sql string, values []any, opt ...Option) (*sql.Rows, error) <span class="cov8" title="1">{
         const op = "dbw.Query"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return nil, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -1710,7 +1717,7 @@ func (rw *RW) Query(ctx context.Context, sql string, values []interface{}, opt .
 }
 
 // ScanRows will scan the rows into the interface
-func (rw *RW) ScanRows(rows *sql.Rows, result interface{}) error <span class="cov8" title="1">{
+func (rw *RW) ScanRows(rows *sql.Rows, result any) error <span class="cov8" title="1">{
         const op = "dbw.ScanRows"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -1773,7 +1780,7 @@ func (rw *RW) DB() *DB <span class="cov0" title="0">{
 
 // Exec will execute the sql with the values as parameters. The int returned
 // is the number of rows affected by the sql. The WithDebug option is supported.
-func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+func (rw *RW) Exec(ctx context.Context, sql string, values []any, opt ...Option) (int, error) <span class="cov8" title="1">{
         const op = "dbw.Exec"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return 0, fmt.Errorf("%s: missing underlying db: %w", op, ErrInternal)
@@ -1793,7 +1800,7 @@ func (rw *RW) Exec(ctx context.Context, sql string, values []interface{}, opt ..
         <span class="cov8" title="1">return int(db.RowsAffected), nil</span>
 }
 
-func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string, bool, error) <span class="cov8" title="1">{
+func (rw *RW) primaryFieldsAreZero(ctx context.Context, i any) ([]string, bool, error) <span class="cov8" title="1">{
         const op = "dbw.primaryFieldsAreZero"
         var fieldNames []string
         tx := rw.underlying.wrapped.Model(i)
@@ -1810,7 +1817,7 @@ func (rw *RW) primaryFieldsAreZero(ctx context.Context, i interface{}) ([]string
         <span class="cov8" title="1">return fieldNames, len(fieldNames) &gt; 0, nil</span>
 }
 
-func isNil(i interface{}) bool <span class="cov8" title="1">{
+func isNil(i any) bool <span class="cov8" title="1">{
         if i == nil </span><span class="cov8" title="1">{
                 return true
         }</span>
@@ -1830,7 +1837,7 @@ func contains(ss []string, t string) bool <span class="cov8" title="1">{
         <span class="cov8" title="1">return false</span>
 }
 
-func validateResourcesInterface(resources interface{}) error <span class="cov8" title="1">{
+func validateResourcesInterface(resources any) error <span class="cov8" title="1">{
         const op = "dbw.validateResourcesInterface"
         vo := reflect.ValueOf(resources)
         if vo.Kind() != reflect.Ptr </span><span class="cov8" title="1">{
@@ -1845,7 +1852,7 @@ func validateResourcesInterface(resources interface{}) error <span class="cov8" 
         <span class="cov8" title="1">return nil</span>
 }
 
-func raiseErrorOnHooks(i interface{}) error <span class="cov8" title="1">{
+func raiseErrorOnHooks(i any) error <span class="cov8" title="1">{
         const op = "dbw.raiseErrorOnHooks"
         v := i
         valOf := reflect.ValueOf(i)
@@ -1893,10 +1900,10 @@ func (rw *RW) IsTx() bool <span class="cov8" title="1">{
         }
 }
 
-func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Options) (string, []interface{}, error) <span class="cov8" title="1">{
+func (rw *RW) whereClausesFromOpts(_ context.Context, i any, opts Options) (string, []any, error) <span class="cov8" title="1">{
         const op = "dbw.whereClausesFromOpts"
         var where []string
-        var args []interface{}
+        var args []any
         if opts.WithVersion != nil </span><span class="cov8" title="1">{
                 if *opts.WithVersion == 0 </span><span class="cov8" title="1">{
                         return "", nil, fmt.Errorf("%s: with version option is zero: %w", op, ErrInvalidParameter)
@@ -1934,7 +1941,7 @@ func (rw *RW) whereClausesFromOpts(_ context.Context, i interface{}, opts Option
 // clearDefaultNullResourceFields will clear fields in the resource which are
 // defaulted to a null value.  This addresses the unfixed issue in gorm:
 // https://github.com/go-gorm/gorm/issues/6351
-func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{}) error <span class="cov8" title="1">{
+func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i any) error <span class="cov8" title="1">{
         const op = "dbw.ClearResourceFields"
         stmt := rw.underlying.wrapped.Model(i).Statement
         if err := stmt.Parse(i); err != nil </span><span class="cov0" title="0">{
@@ -1966,10 +1973,10 @@ func (rw *RW) clearDefaultNullResourceFields(ctx context.Context, i interface{})
         <span class="cov8" title="1">return nil</span>
 }
 
-func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []interface{}, error) <span class="cov8" title="1">{
+func (rw *RW) primaryKeysWhere(ctx context.Context, i any) (string, []any, error) <span class="cov8" title="1">{
         const op = "dbw.primaryKeysWhere"
         var fieldNames []string
-        var fieldValues []interface{}
+        var fieldValues []any
         tx := rw.underlying.wrapped.Model(i)
         if err := tx.Statement.Parse(i); err != nil </span><span class="cov0" title="0">{
                 return "", nil, fmt.Errorf("%s: %w", op, err)
@@ -1979,13 +1986,13 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
                 if resourceType.GetPublicId() == "" </span><span class="cov8" title="1">{
                         return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
                 }</span>
-                <span class="cov8" title="1">fieldValues = []interface{}{resourceType.GetPublicId()}
+                <span class="cov8" title="1">fieldValues = []any{resourceType.GetPublicId()}
                 fieldNames = []string{"public_id"}</span>
         case ResourcePrivateIder:<span class="cov8" title="1">
                 if resourceType.GetPrivateId() == "" </span><span class="cov8" title="1">{
                         return "", nil, fmt.Errorf("%s: missing primary key: %w", op, ErrInvalidParameter)
                 }</span>
-                <span class="cov8" title="1">fieldValues = []interface{}{resourceType.GetPrivateId()}
+                <span class="cov8" title="1">fieldValues = []any{resourceType.GetPrivateId()}
                 fieldNames = []string{"private_id"}</span>
         default:<span class="cov8" title="1">
                 v := reflect.ValueOf(i)
@@ -2013,7 +2020,7 @@ func (rw *RW) primaryKeysWhere(ctx context.Context, i interface{}) (string, []in
 // LookupWhere will lookup the first resource using a where clause with
 // parameters (it only returns the first one). Supports WithDebug, and
 // WithTable options.
-func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where string, args []interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) LookupWhere(ctx context.Context, resource any, where string, args []any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.LookupWhere"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -2048,7 +2055,7 @@ func (rw *RW) LookupWhere(ctx context.Context, resource interface{}, where strin
 // Supports WithTable and WithLimit options.  If WithLimit &lt; 0, then unlimited results are returned.
 // If WithLimit == 0, then default limits are used for results.
 // Supports the WithOrder, WithTable, and WithDebug options.
-func (rw *RW) SearchWhere(ctx context.Context, resources interface{}, where string, args []interface{}, opt ...Option) error <span class="cov8" title="1">{
+func (rw *RW) SearchWhere(ctx context.Context, resources any, where string, args []any, opt ...Option) error <span class="cov8" title="1">{
         const op = "dbw.SearchWhere"
         opts := GetOpts(opt...)
         if rw.underlying == nil </span><span class="cov8" title="1">{
@@ -2177,7 +2184,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) <span class="cov8"
                 _, err = rw.Exec(ctx, fmt.Sprintf(`create database "%s"`, tmpDbName), nil)
                 require.NoError(err)
                 t.Cleanup(func() </span><span class="cov0" title="0">{
-                        _, err = rw.Exec(ctx, `select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid &lt;&gt; pg_backend_pid()`, []interface{}{tmpDbName})
+                        _, err = rw.Exec(ctx, `select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid &lt;&gt; pg_backend_pid()`, []any{tmpDbName})
                         assert.NoError(t, err)
                         _, err = rw.Exec(ctx, fmt.Sprintf(`drop database %s`, tmpDbName), nil)
                         assert.NoError(t, err)
@@ -2950,7 +2957,7 @@ func NonUpdatableFields() []string <span class="cov8" title="1">{
 // value for the WithVersion option and will return an error. WithWhere allows
 // specifying an additional constraint on the operation in addition to the PKs.
 // WithDebug will turn on debugging for the update call.
-func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) <span class="cov8" title="1">{
+func (rw *RW) Update(ctx context.Context, i any, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) <span class="cov8" title="1">{
         const op = "dbw.Update"
         if rw.underlying == nil </span><span class="cov8" title="1">{
                 return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)

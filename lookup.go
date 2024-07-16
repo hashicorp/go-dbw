@@ -16,7 +16,7 @@ import (
 // primary key for lookup.  Otherwise, the resource tags are used to
 // determine it's primary key(s) for lookup.  The WithDebug and WithTable
 // options are supported.
-func (rw *RW) LookupBy(ctx context.Context, resourceWithIder interface{}, opt ...Option) error {
+func (rw *RW) LookupBy(ctx context.Context, resourceWithIder any, opt ...Option) error {
 	const op = "dbw.LookupById"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -55,7 +55,7 @@ func (rw *RW) LookupByPublicId(ctx context.Context, resource ResourcePublicIder,
 	return rw.LookupBy(ctx, resource, opt...)
 }
 
-func (rw *RW) lookupAfterWrite(ctx context.Context, i interface{}, opt ...Option) error {
+func (rw *RW) lookupAfterWrite(ctx context.Context, i any, opt ...Option) error {
 	const op = "dbw.lookupAfterWrite"
 	opts := GetOpts(opt...)
 	withLookup := opts.WithLookup

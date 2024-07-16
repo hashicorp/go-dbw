@@ -27,14 +27,14 @@ type Option func(*Options)
 // they're available for use by other packages.
 type Options struct {
 	// WithBeforeWrite provides and option to provide a func to be called before a
-	// write operation. The i interface{} passed at runtime will be the resource(s)
+	// write operation. The i any passed at runtime will be the resource(s)
 	// being written.
-	WithBeforeWrite func(i interface{}) error
+	WithBeforeWrite func(i any) error
 
 	// WithAfterWrite provides and option to provide a func to be called after a
-	// write operation.  The i interface{} passed at runtime will be the resource(s)
+	// write operation.  The i any passed at runtime will be the resource(s)
 	// being written.
-	WithAfterWrite func(i interface{}, rowsAffected int) error
+	WithAfterWrite func(i any, rowsAffected int) error
 
 	// WithLookup enables a lookup after a write operation.
 	WithLookup bool
@@ -67,7 +67,7 @@ type Options struct {
 
 	// WithWhereClauseArgs provides an option to provide a where clause arguments for an
 	// operation.
-	WithWhereClauseArgs []interface{}
+	WithWhereClauseArgs []any
 
 	// WithOrder provides an option to provide an order when searching and looking
 	// up.
@@ -122,18 +122,18 @@ func getDefaultOptions() Options {
 }
 
 // WithBeforeWrite provides and option to provide a func to be called before a
-// write operation. The i interface{} passed at runtime will be the resource(s)
+// write operation. The i any passed at runtime will be the resource(s)
 // being written.
-func WithBeforeWrite(fn func(i interface{}) error) Option {
+func WithBeforeWrite(fn func(i any) error) Option {
 	return func(o *Options) {
 		o.WithBeforeWrite = fn
 	}
 }
 
 // WithAfterWrite provides and option to provide a func to be called after a
-// write operation.  The i interface{} passed at runtime will be the resource(s)
+// write operation.  The i any passed at runtime will be the resource(s)
 // being written.
-func WithAfterWrite(fn func(i interface{}, rowsAffected int) error) Option {
+func WithAfterWrite(fn func(i any, rowsAffected int) error) Option {
 	return func(o *Options) {
 		o.WithAfterWrite = fn
 	}
@@ -191,7 +191,7 @@ func WithSkipVetForWrite(enable bool) Option {
 
 // WithWhere provides an option to provide a where clause with arguments for an
 // operation.
-func WithWhere(whereClause string, args ...interface{}) Option {
+func WithWhere(whereClause string, args ...any) Option {
 	return func(o *Options) {
 		o.WithWhereClause = whereClause
 		o.WithWhereClauseArgs = append(o.WithWhereClauseArgs, args...)

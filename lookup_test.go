@@ -28,7 +28,7 @@ func TestDb_LookupBy(t *testing.T) {
 	testScooterWithROField := testScooter(t, testRw, "", 0, "read-only")
 
 	type args struct {
-		resource interface{}
+		resource any
 		opt      []dbw.Option
 	}
 	tests := []struct {
@@ -121,7 +121,7 @@ func TestDb_LookupBy(t *testing.T) {
 			name: "compond-with-zero-value-pk",
 			rw:   testRw,
 			args: args{
-				resource: func() interface{} {
+				resource: func() any {
 					cp := rental.Clone()
 					cp.(*dbtest.TestRental).CarId = ""
 					return cp
@@ -199,7 +199,7 @@ func TestDb_LookupBy(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"after", &dbtest.TestWithAfterFind{}},
 		}

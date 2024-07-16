@@ -25,7 +25,7 @@ where name in (@names)`
 rows, err := rw.Query(
     context.Background(), 
     where, 
-    []interface{}{ sql.Named{"names", "alice", "bob"}},
+    []any{ sql.Named{"names", "alice", "bob"}},
 )
 defer rows.Close()
 for rows.Next() {

@@ -34,17 +34,17 @@ func TestDb_Delete(t *testing.T) {
 		return u
 	}
 
-	successBeforeFn := func(_ interface{}) error {
+	successBeforeFn := func(_ any) error {
 		return nil
 	}
-	successAfterFn := func(_ interface{}, _ int) error {
+	successAfterFn := func(_ any, _ int) error {
 		return nil
 	}
 	errFailedFn := errors.New("fail")
-	failedBeforeFn := func(_ interface{}) error {
+	failedBeforeFn := func(_ any) error {
 		return errFailedFn
 	}
-	failedAfterFn := func(_ interface{}, _ int) error {
+	failedAfterFn := func(_ any, _ int) error {
 		return errFailedFn
 	}
 
@@ -251,7 +251,7 @@ func TestDb_Delete(t *testing.T) {
 		t.Run("hooks", func(t *testing.T) {
 			hookTests := []struct {
 				name     string
-				resource interface{}
+				resource any
 			}{
 				{"before", &dbtest.TestWithBeforeDelete{}},
 				{"after", &dbtest.TestWithAfterDelete{}},
@@ -278,41 +278,41 @@ func TestDb_DeleteItems(t *testing.T) {
 	testWithTableUser, err := dbtest.NewTestUser()
 	require.NoError(t, err)
 
-	createFn := func() []interface{} {
-		results := []interface{}{}
+	createFn := func() []any {
+		results := []any{}
 		for i := 0; i < 10; i++ {
 			u := testUser(t, testRw, "", "", "")
 			results = append(results, u)
 		}
 		return results
 	}
-	createMixedFn := func() []interface{} {
+	createMixedFn := func() []any {
 		u, err := dbtest.NewTestUser()
 		require.NoError(t, err)
 		c, err := dbtest.NewTestCar()
 		require.NoError(t, err)
-		return []interface{}{
+		return []any{
 			u,
 			c,
 		}
 	}
 
-	successBeforeFn := func(_ interface{}) error {
+	successBeforeFn := func(_ any) error {
 		return nil
 	}
-	successAfterFn := func(_ interface{}, _ int) error {
+	successAfterFn := func(_ any, _ int) error {
 		return nil
 	}
 	errFailedFn := errors.New("fail")
-	failedBeforeFn := func(_ interface{}) error {
+	failedBeforeFn := func(_ any) error {
 		return errFailedFn
 	}
-	failedAfterFn := func(_ interface{}, _ int) error {
+	failedAfterFn := func(_ any, _ int) error {
 		return errFailedFn
 	}
 
 	type args struct {
-		deleteItems []interface{}
+		deleteItems []any
 		opt         []dbw.Option
 	}
 	tests := []struct {
@@ -422,7 +422,7 @@ func TestDb_DeleteItems(t *testing.T) {
 			name: "empty items",
 			rw:   dbw.New(db),
 			args: args{
-				deleteItems: []interface{}{},
+				deleteItems: []any{},
 			},
 			wantErr:   true,
 			wantErrIs: dbw.ErrInvalidParameter,
@@ -463,7 +463,7 @@ func TestDb_DeleteItems(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"before", &dbtest.TestWithBeforeDelete{}},
 			{"after", &dbtest.TestWithAfterDelete{}},
@@ -472,7 +472,7 @@ func TestDb_DeleteItems(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				assert, require := assert.New(t), require.New(t)
 				w := dbw.New(db)
-				rowsUpdated, err := w.DeleteItems(context.Background(), []interface{}{tt.resource})
+				rowsUpdated, err := w.DeleteItems(context.Background(), []any{tt.resource})
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrInvalidParameter)
 				assert.Contains(err.Error(), "gorm callback/hooks are not supported")

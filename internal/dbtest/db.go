@@ -46,7 +46,7 @@ func AllocTestUser() TestUser {
 }
 
 // Clone is useful when you're retrying transactions and you need to send the user several times
-func (u *TestUser) Clone() interface{} {
+func (u *TestUser) Clone() any {
 	s := proto.Clone(u.StoreTestUser)
 	return &TestUser{
 		StoreTestUser: s.(*StoreTestUser),
@@ -126,12 +126,12 @@ func (c *TestCar) SetTableName(name string) {
 }
 
 type Cloner interface {
-	Clone() interface{}
+	Clone() any
 }
 
 type NotIder struct{}
 
-func (i *NotIder) Clone() interface{} {
+func (i *NotIder) Clone() any {
 	return &NotIder{}
 }
 
@@ -150,7 +150,7 @@ func NewTestRental(userId, carId string) (*TestRental, error) {
 }
 
 // Clone is useful when you're retrying transactions and you need to send the user several times
-func (t *TestRental) Clone() interface{} {
+func (t *TestRental) Clone() any {
 	s := proto.Clone(t.StoreTestRental)
 	return &TestRental{
 		StoreTestRental: s.(*StoreTestRental),
@@ -186,7 +186,7 @@ func NewTestScooter() (*TestScooter, error) {
 	}, nil
 }
 
-func (t *TestScooter) Clone() interface{} {
+func (t *TestScooter) Clone() any {
 	s := proto.Clone(t.StoreTestScooter)
 	return &TestScooter{
 		StoreTestScooter: s.(*StoreTestScooter),

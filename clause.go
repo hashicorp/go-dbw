@@ -16,7 +16,7 @@ type ColumnValue struct {
 	// Column name
 	Column string
 	// Value is the column's value
-	Value interface{}
+	Value any
 }
 
 // Column represents a table Column
@@ -34,7 +34,7 @@ func (c *Column) toAssignment(column string) clause.Assignment {
 	}
 }
 
-func rawAssignment(column string, value interface{}) clause.Assignment {
+func rawAssignment(column string, value any) clause.Assignment {
 	return clause.Assignment{
 		Column: clause.Column{Name: column},
 		Value:  value,
@@ -45,7 +45,7 @@ func rawAssignment(column string, value interface{}) clause.Assignment {
 // Expr(...) to create these values.
 type ExprValue struct {
 	Sql  string
-	Vars []interface{}
+	Vars []any
 }
 
 func (ev *ExprValue) toAssignment(column string) clause.Assignment {
@@ -60,18 +60,18 @@ func (ev *ExprValue) toAssignment(column string) clause.Assignment {
 //
 // Set name column to null example:
 //
-//	SetColumnValues(map[string]interface{}{"name": Expr("NULL")})
+//	SetColumnValues(map[string]any{"name": Expr("NULL")})
 //
 // Set exp_time column to N seconds from now:
 //
-//	SetColumnValues(map[string]interface{}{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
-func Expr(expr string, args ...interface{}) ExprValue {
+//	SetColumnValues(map[string]any{"exp_time": Expr("wt_add_seconds_to_now(?)", 10)})
+func Expr(expr string, args ...any) ExprValue {
 	return ExprValue{Sql: expr, Vars: args}
 }
 
 // SetColumnValues defines a map from column names to values for database
 // operations.
-func SetColumnValues(columnValues map[string]interface{}) []ColumnValue {
+func SetColumnValues(columnValues map[string]any) []ColumnValue {
 	keys := make([]string, 0, len(columnValues))
 	for key := range columnValues {
 		keys = append(keys, key)
@@ -105,14 +105,14 @@ type OnConflict struct {
 	// be any one of these:
 	//	Columns: the name of a specific column or columns
 	//  Constraint: the name of a unique constraint
-	Target interface{}
+	Target any
 
 	// Action specifies the action to take on conflict. This can be any one of
 	// these:
 	//	DoNothing: leaves the conflicting record as-is
 	//  UpdateAll: updates all the columns of the conflicting record using the resource's data
 	//  []ColumnValue: update a set of columns of the conflicting record using the set of assignments
-	Action interface{}
+	Action any
 }
 
 // Constraint defines database constraint name

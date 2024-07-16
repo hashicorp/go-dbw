@@ -235,7 +235,7 @@ type gormLogger struct {
 	logger hclog.Logger
 }
 
-func (g gormLogger) Printf(_ string, values ...interface{}) {
+func (g gormLogger) Printf(_ string, values ...any) {
 	if len(values) > 1 {
 		switch values[1].(type) {
 		case *pgconn.PgError:

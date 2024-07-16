@@ -8,10 +8,10 @@ and after the write operations:
 * [WithAfterWrite(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#WithAfterWrite)
 
 ```go 
-beforeFn := func(_ interface{}) error {	
+beforeFn := func(_ any) error {	
     return nil // always succeed for this example
 }
-afterFn := func(_ interface{}, _ int) error { 
+afterFn := func(_ any, _ int) error { 
     return nil // always succeed for this example
 }
 

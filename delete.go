@@ -13,7 +13,7 @@ import (
 // and WithVersion. WithWhere and WithVersion allows specifying a additional
 // constraints on the operation in addition to the PKs. Delete returns the
 // number of rows deleted and any errors.
-func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, error) {
+func (rw *RW) Delete(ctx context.Context, i any, opt ...Option) (int, error) {
 	const op = "dbw.Delete"
 	if rw.underlying == nil {
 		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -71,7 +71,7 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 
 // DeleteItems will delete multiple items of the same type. Options supported:
 // WithDebug, WithTable
-func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) {
+func (rw *RW) DeleteItems(ctx context.Context, deleteItems []any, opt ...Option) (int, error) {
 	const op = "dbw.DeleteItems"
 	if rw.underlying == nil {
 		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)

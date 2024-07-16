@@ -39,14 +39,14 @@ func TestUpdateFields(t *testing.T) {
 	}
 
 	type args struct {
-		i              interface{}
+		i              any
 		fieldMaskPaths []string
 		setToNullPaths []string
 	}
 	tests := []struct {
 		name       string
 		args       args
-		want       map[string]interface{}
+		want       map[string]any
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -79,7 +79,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{"Name"},
 				setToNullPaths: nil,
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"Name": id,
 			},
 			wantErr: false,
@@ -134,7 +134,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: []string{"email"},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name":  id,
 				"email": gorm.Expr("NULL"),
 			},
@@ -148,7 +148,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{"name", "email"},
 				setToNullPaths: []string{},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name":  id,
 				"email": id,
 			},
@@ -162,7 +162,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{},
 				setToNullPaths: []string{"name", "email"},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name":  gorm.Expr("NULL"),
 				"email": gorm.Expr("NULL"),
 			},
@@ -180,7 +180,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: []string{"email"},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name":  id,
 				"email": gorm.Expr("NULL"),
 			},
@@ -198,7 +198,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: []string{"name"},
 				setToNullPaths: nil,
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"name": id,
 			},
 			wantErr:    false,
@@ -215,7 +215,7 @@ func TestUpdateFields(t *testing.T) {
 				fieldMaskPaths: nil,
 				setToNullPaths: []string{"email"},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"email": gorm.Expr("NULL"),
 			},
 			wantErr:    false,
@@ -269,7 +269,7 @@ func TestUpdateFields(t *testing.T) {
 
 func TestBuildUpdatePaths(t *testing.T) {
 	type args struct {
-		fieldValues     map[string]interface{}
+		fieldValues     map[string]any
 		fieldMask       []string
 		allowZeroFields []string
 	}
@@ -282,7 +282,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "empty-inputs",
 			args: args{
-				fieldValues:     map[string]interface{}{},
+				fieldValues:     map[string]any{},
 				fieldMask:       []string{},
 				allowZeroFields: []string{},
 			},
@@ -292,7 +292,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "no-changes",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",
@@ -315,7 +315,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "empty-field-mask-allow-all-zero-fields",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",
@@ -341,7 +341,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "zero-fields-are-nulls",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",
@@ -371,7 +371,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "all-zero-fields-allowed-no-nulls",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",
@@ -402,7 +402,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "non-zeros-allowed-as-zero-fields",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",
@@ -434,7 +434,7 @@ func TestBuildUpdatePaths(t *testing.T) {
 		{
 			name: "only-zero-fields-in-fieldmask",
 			args: args{
-				fieldValues: map[string]interface{}{
+				fieldValues: map[string]any{
 					"Boolean":       true,
 					"Int":           100,
 					"String":        "hello",

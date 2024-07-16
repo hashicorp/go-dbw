@@ -57,7 +57,7 @@ func NonUpdatableFields() []string {
 // value for the WithVersion option and will return an error. WithWhere allows
 // specifying an additional constraint on the operation in addition to the PKs.
 // WithDebug will turn on debugging for the update call.
-func (rw *RW) Update(ctx context.Context, i interface{}, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
+func (rw *RW) Update(ctx context.Context, i any, fieldMaskPaths []string, setToNullPaths []string, opt ...Option) (int, error) {
 	const op = "dbw.Update"
 	if rw.underlying == nil {
 		return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)

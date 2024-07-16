@@ -89,7 +89,7 @@ func NonCreatableFields() []string {
 // error. WithWhere allows specifying an additional constraint on the on
 // conflict operation in addition to the on conflict target policy (columns or
 // constraint).
-func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
+func (rw *RW) Create(ctx context.Context, i any, opt ...Option) error {
 	const op = "dbw.Create"
 	if rw.underlying == nil {
 		return fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
@@ -199,7 +199,7 @@ func (rw *RW) Create(ctx context.Context, i interface{}, opt ...Option) error {
 // WithBatchSize, WithDebug, WithBeforeWrite, WithAfterWrite,
 // WithReturnRowsAffected, OnConflict, WithVersion, WithTable, and WithWhere.
 // WithLookup is not a supported option.
-func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...Option) error {
+func (rw *RW) CreateItems(ctx context.Context, createItems any, opt ...Option) error {
 	const op = "dbw.CreateItems"
 	switch {
 	case rw.underlying == nil:
@@ -335,7 +335,7 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
 	return nil
 }
 
-func setFieldsToNil(i interface{}, fieldNames []string) {
+func setFieldsToNil(i any, fieldNames []string) {
 	// Note: error cases are not handled
 	_ = Clear(i, fieldNames, 2)
 }
@@ -346,7 +346,7 @@ func setFieldsToNil(i interface{}, fieldNames []string) {
 //
 // A depth of 2 will change i and i's children. A depth of 1 will change i
 // but no children of i. A depth of 0 will return with no changes to i.
-func Clear(i interface{}, fields []string, depth int) error {
+func Clear(i any, fields []string, depth int) error {
 	const op = "dbw.Clear"
 	if len(fields) == 0 || depth == 0 {
 		return nil

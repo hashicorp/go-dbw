@@ -15,7 +15,7 @@ import (
 // sent to the db.  The map keys will be the field names for the fields to be
 // updated.  The caller provided fieldMaskPaths and setToNullPaths must not
 // intersect.  fieldMaskPaths and setToNullPaths cannot both be zero len.
-func UpdateFields(i interface{}, fieldMaskPaths []string, setToNullPaths []string) (map[string]interface{}, error) {
+func UpdateFields(i any, fieldMaskPaths []string, setToNullPaths []string) (map[string]any, error) {
 	const op = "dbw.UpdateFields"
 	if i == nil {
 		return nil, fmt.Errorf("%s: interface is missing: %w", op, ErrInvalidParameter)
@@ -38,7 +38,7 @@ func UpdateFields(i interface{}, fieldMaskPaths []string, setToNullPaths []strin
 		return nil, fmt.Errorf("%s: fieldMashPaths and setToNullPaths cannot intersect: %w", op, ErrInvalidParameter)
 	}
 
-	updateFields := map[string]interface{}{} // case sensitive update fields to values
+	updateFields := map[string]any{} // case sensitive update fields to values
 
 	found := map[string]struct{}{} // we need something to keep track of found fields (case insensitive)
 
@@ -143,7 +143,7 @@ func Intersection(av, bv []string) ([]string, map[string]string, map[string]stri
 // BuildUpdatePaths takes a map of field names to field values, field masks,
 // fields allowed to be zero value, and returns both a list of field names to
 // update and a list of field names that should be set to null.
-func BuildUpdatePaths(fieldValues map[string]interface{}, fieldMask []string, allowZeroFields []string) (masks []string, nulls []string) {
+func BuildUpdatePaths(fieldValues map[string]any, fieldMask []string, allowZeroFields []string) (masks []string, nulls []string) {
 	for f, v := range fieldValues {
 		if !contains(fieldMask, f) {
 			continue
@@ -158,6 +158,6 @@ func BuildUpdatePaths(fieldValues map[string]interface{}, fieldMask []string, al
 	return masks, nulls
 }
 
-func isZero(i interface{}) bool {
+func isZero(i any) bool {
 	return i == nil || reflect.DeepEqual(i, reflect.Zero(reflect.TypeOf(i)).Interface())
 }

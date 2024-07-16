@@ -74,7 +74,7 @@ func TestSetup(t *testing.T, opt ...TestOption) (*DB, string) {
 		_, err = rw.Exec(ctx, fmt.Sprintf(`create database "%s"`, tmpDbName), nil)
 		require.NoError(err)
 		t.Cleanup(func() {
-			_, err = rw.Exec(ctx, `select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid <> pg_backend_pid()`, []interface{}{tmpDbName})
+			_, err = rw.Exec(ctx, `select pg_terminate_backend(pid) from pg_stat_activity where datname = ? and pid <> pg_backend_pid()`, []any{tmpDbName})
 			assert.NoError(t, err)
 			_, err = rw.Exec(ctx, fmt.Sprintf(`drop database %s`, tmpDbName), nil)
 			assert.NoError(t, err)

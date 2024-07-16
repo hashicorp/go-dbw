@@ -60,17 +60,17 @@ func TestDb_Update(t *testing.T) {
 	versionOne := uint32(1)
 	versionZero := uint32(0)
 
-	successBeforeFn := func(_ interface{}) error {
+	successBeforeFn := func(_ any) error {
 		return nil
 	}
-	successAfterFn := func(_ interface{}, _ int) error {
+	successAfterFn := func(_ any, _ int) error {
 		return nil
 	}
 	errFailedFn := errors.New("fail")
-	failedBeforeFn := func(_ interface{}) error {
+	failedBeforeFn := func(_ any) error {
 		return errFailedFn
 	}
-	failedAfterFn := func(_ interface{}, _ int) error {
+	failedAfterFn := func(_ any, _ int) error {
 		return errFailedFn
 	}
 
@@ -481,7 +481,7 @@ func TestDb_Update(t *testing.T) {
 				}
 				where = fmt.Sprintf("%s and %s is null", where, f)
 			}
-			err = rw.LookupWhere(context.Background(), foundUser, where, []interface{}{tt.args.i.PublicId})
+			err = rw.LookupWhere(context.Background(), foundUser, where, []any{tt.args.i.PublicId})
 			require.NoError(err)
 			assert.Equal(tt.args.i.PublicId, foundUser.PublicId)
 			assert.Equal(tt.wantName, foundUser.Name)
@@ -597,7 +597,7 @@ func TestDb_Update(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"before-update", &dbtest.TestWithBeforeUpdate{}},
 			{"after-update", &dbtest.TestWithAfterUpdate{}},

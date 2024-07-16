@@ -27,7 +27,7 @@ func TestDb_Exec(t *testing.T) {
 		require.NoError(err)
 		_, err = w.Exec(testCtx,
 			"insert into db_test_user(public_id, name) values(@public_id, @name)",
-			[]interface{}{
+			[]any{
 				sql.Named("public_id", id),
 				sql.Named("name", "alice"),
 			},
@@ -37,7 +37,7 @@ func TestDb_Exec(t *testing.T) {
 		require.NoError(err)
 		rowsAffected, err := w.Exec(testCtx,
 			"update db_test_user set name = @name where public_id = @public_id",
-			[]interface{}{
+			[]any{
 				sql.Named("public_id", id),
 				sql.Named("name", "alice-"+id),
 			})
@@ -81,7 +81,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		assert.NotEmpty(user.PublicId)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []interface{}{user.PublicId, 1}, dbw.WithDebug(true))
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ? and 1 = ?", []any{user.PublicId, 1}, dbw.WithDebug(true))
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
 	})
@@ -96,18 +96,18 @@ func TestDb_LookupWhere(t *testing.T) {
 		assert.NotEmpty(user.PublicId)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{user.PublicId}, dbw.WithTable(user.TableName()))
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []any{user.PublicId}, dbw.WithTable(user.TableName()))
 		require.NoError(err)
 		assert.Equal(foundUser.PublicId, user.PublicId)
 
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{user.PublicId}, dbw.WithTable("invalid-table-name"))
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []any{user.PublicId}, dbw.WithTable("invalid-table-name"))
 		require.Error(err)
 	})
 	t.Run("tx-nil,", func(t *testing.T) {
 		assert, require := assert.New(t), require.New(t)
 		w := dbw.RW{}
 		var foundUser dbtest.TestUser
-		err := w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{1})
+		err := w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []any{1})
 		require.Error(err)
 		assert.Equal("dbw.LookupWhere: missing underlying db: invalid parameter", err.Error())
 	})
@@ -118,7 +118,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []interface{}{id})
+		err = w.LookupWhere(context.Background(), &foundUser, "public_id = ?", []any{id})
 		require.Error(err)
 		assert.ErrorIs(err, dbw.ErrRecordNotFound)
 	})
@@ -129,7 +129,7 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), &foundUser, "? = ?", []interface{}{id})
+		err = w.LookupWhere(context.Background(), &foundUser, "? = ?", []any{id})
 		require.Error(err)
 	})
 	t.Run("not-ptr", func(t *testing.T) {
@@ -139,13 +139,13 @@ func TestDb_LookupWhere(t *testing.T) {
 		require.NoError(err)
 
 		var foundUser dbtest.TestUser
-		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", []interface{}{id})
+		err = w.LookupWhere(context.Background(), foundUser, "public_id = ?", []any{id})
 		require.Error(err)
 	})
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"after", &dbtest.TestWithAfterFind{}},
 		}
@@ -153,7 +153,7 @@ func TestDb_LookupWhere(t *testing.T) {
 			t.Run(tt.name, func(t *testing.T) {
 				assert, require := assert.New(t), require.New(t)
 				w := dbw.New(conn)
-				err := w.LookupWhere(context.Background(), tt.resource, "public_id = ?", []interface{}{"1"})
+				err := w.LookupWhere(context.Background(), tt.resource, "public_id = ?", []any{"1"})
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrInvalidParameter)
 				assert.Contains(err.Error(), "gorm callback/hooks are not supported")
@@ -170,7 +170,7 @@ func TestDb_SearchWhere(t *testing.T) {
 
 	type args struct {
 		where string
-		arg   []interface{}
+		arg   []any
 		opt   []dbw.Option
 	}
 	tests := []struct {
@@ -221,7 +221,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "public_id = ?",
-				arg:   []interface{}{knownUser.PublicId},
+				arg:   []any{knownUser.PublicId},
 				opt:   []dbw.Option{dbw.WithLimit(3)},
 			},
 			wantCnt: 1,
@@ -233,7 +233,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "public_id = ?",
-				arg:   []interface{}{knownUser.PublicId},
+				arg:   []any{knownUser.PublicId},
 				opt:   []dbw.Option{dbw.WithLimit(3), dbw.WithTable(knownUser.TableName())},
 			},
 			wantCnt: 1,
@@ -245,7 +245,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "public_id = ?",
-				arg:   []interface{}{knownUser.PublicId},
+				arg:   []any{knownUser.PublicId},
 				opt:   []dbw.Option{dbw.WithLimit(3), dbw.WithTable("invalid-table-name")},
 			},
 			wantErr: true,
@@ -266,7 +266,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			rw:        testRw,
 			createCnt: 1,
 			args: args{
-				arg: []interface{}{knownUser.PublicId},
+				arg: []any{knownUser.PublicId},
 				opt: []dbw.Option{dbw.WithLimit(3)},
 			},
 			wantErr: true,
@@ -277,7 +277,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "public_id = ?",
-				arg:   []interface{}{"bad-id"},
+				arg:   []any{"bad-id"},
 				opt:   []dbw.Option{dbw.WithLimit(3)},
 			},
 			wantCnt: 0,
@@ -289,7 +289,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "bad_column_name = ?",
-				arg:   []interface{}{knownUser.PublicId},
+				arg:   []any{knownUser.PublicId},
 				opt:   []dbw.Option{dbw.WithLimit(3)},
 			},
 			wantCnt: 0,
@@ -301,7 +301,7 @@ func TestDb_SearchWhere(t *testing.T) {
 			createCnt: 1,
 			args: args{
 				where: "public_id = ?",
-				arg:   []interface{}{knownUser.PublicId},
+				arg:   []any{knownUser.PublicId},
 				opt:   []dbw.Option{dbw.WithLimit(3)},
 			},
 			wantCnt: 0,
@@ -338,7 +338,7 @@ func TestDb_SearchWhere(t *testing.T) {
 	t.Run("hooks", func(t *testing.T) {
 		hookTests := []struct {
 			name     string
-			resource interface{}
+			resource any
 		}{
 			{"after", &dbtest.TestWithAfterFind{}},
 		}

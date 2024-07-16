@@ -12,7 +12,7 @@ err, rowsAffected = rw.Delete(ctx,
 ```go
 var rowsAffected int64
 err = rw.DeleteItems(ctx,
-    []interface{}{&user1, &user2}, 
+    []any{&user1, &user2}, 
     dbw.WithRowsAffected(&rowsAffected),
 )  
 ```
