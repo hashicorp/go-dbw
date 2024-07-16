@@ -36,7 +36,11 @@ type Writer interface {
 	// responsible for the transaction life cycle of the writer and if an error
 	// is returned the caller must decide what to do with the transaction, which
 	// almost always should be to rollback.
-	CreateItems(ctx context.Context, createItems []interface{}, opt ...Option) error
+	// Supported options: WithBatchSize, WithDebug, WithBeforeWrite,
+	// WithAfterWrite, WithReturnRowsAffected, OnConflict, WithVersion,
+	// WithTable, and WithWhere.
+	// WithLookup is not a supported option.
+	CreateItems(ctx context.Context, createItems interface{}, opt ...Option) error
 
 	// Delete a resource in the database. The caller is responsible for the
 	// transaction life cycle of the writer and if an error is returned the

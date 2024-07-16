@@ -105,6 +105,10 @@ type Options struct {
 	// operation.
 	WithTable string
 
+	// WithBatchSize specifies an option for setting the batch size for bulk
+	// operations. If WithBatchSize == 0, then the default batch size is used.
+	WithBatchSize int
+
 	withLogLevel LogLevel
 }
 
@@ -112,6 +116,7 @@ func getDefaultOptions() Options {
 	return Options{
 		WithFieldMaskPaths: []string{},
 		WithNullPaths:      []string{},
+		WithBatchSize:      DefaultBatchSize,
 		withLogLevel:       Error,
 	}
 }
@@ -269,5 +274,14 @@ func WithTable(name string) Option {
 func WithLogLevel(l LogLevel) Option {
 	return func(o *Options) {
 		o.withLogLevel = l
+	}
+}
+
+// WithBatchSize specifies an option for setting the batch size for bulk
+// operations like CreateItems. If WithBatchSize == 0, the default batch size is
+// used (see DefaultBatchSize const).
+func WithBatchSize(size int) Option {
+	return func(o *Options) {
+		o.WithBatchSize = size
 	}
 }

@@ -253,4 +253,17 @@ func Test_getOpts(t *testing.T) {
 		testOpts.withLogLevel = Warn
 		assert.Equal(opts, testOpts)
 	})
+	t.Run("WithBatchSize", func(t *testing.T) {
+		assert := assert.New(t)
+		// test default
+		opts := GetOpts()
+		testOpts := getDefaultOptions()
+		testOpts.WithBatchSize = DefaultBatchSize
+		assert.Equal(opts, testOpts)
+
+		opts = GetOpts(WithBatchSize(100))
+		testOpts = getDefaultOptions()
+		testOpts.WithBatchSize = 100
+		assert.Equal(opts, testOpts)
+	})
 }

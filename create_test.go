@@ -7,6 +7,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/go-dbw"
@@ -472,34 +474,6 @@ func TestDb_Create_OnConflict(t *testing.T) {
 		assert.Equal(conflictResource.PublicId, foundResource.PublicId)
 		assert.Equal(conflictResource.Name, foundResource.Name)
 	})
-	t.Run("CreateItems", func(t *testing.T) {
-		assert, require := assert.New(t), require.New(t)
-		initialUser := createInitialUser()
-		conflictUser, err := dbtest.NewTestUser()
-		require.NoError(err)
-		userNameId, err := dbw.NewId("test-user-name")
-		require.NoError(err)
-		conflictUser.PublicId = initialUser.PublicId
-		conflictUser.Name = userNameId
-		onConflict := dbw.OnConflict{
-			Target: dbw.Columns{"public_id"},
-			Action: dbw.SetColumns([]string{"name"}),
-		}
-		users := []interface{}{}
-		users = append(users, conflictUser)
-		var rowsAffected int64
-		err = rw.CreateItems(ctx, users, dbw.WithOnConflict(&onConflict), dbw.WithReturnRowsAffected(&rowsAffected))
-		require.NoError(err)
-		foundUser, err := dbtest.NewTestUser()
-		require.NoError(err)
-		foundUser.PublicId = conflictUser.PublicId
-		err = rw.LookupByPublicId(context.Background(), foundUser)
-		require.NoError(err)
-
-		assert.Equal(int64(1), rowsAffected)
-		assert.Equal(conflictUser.PublicId, foundUser.PublicId)
-		assert.Equal(conflictUser.Name, foundUser.Name)
-	})
 }
 
 func TestDb_CreateItems(t *testing.T) {
@@ -510,8 +484,8 @@ func TestDb_CreateItems(t *testing.T) {
 	testWithTableUser, err := dbtest.NewTestUser()
 	require.NoError(t, err)
 
-	createFn := func() []interface{} {
-		results := []interface{}{}
+	createFn := func() interface{} {
+		results := []*dbtest.TestUser{}
 		for i := 0; i < 10; i++ {
 			u, err := dbtest.NewTestUser()
 			require.NoError(t, err)
@@ -543,7 +517,7 @@ func TestDb_CreateItems(t *testing.T) {
 		return errFailedFn
 	}
 	type args struct {
-		createItems []interface{}
+		createItems interface{}
 		opt         []dbw.Option
 	}
 	tests := []struct {
@@ -652,6 +626,15 @@ func TestDb_CreateItems(t *testing.T) {
 			wantErr:   true,
 			wantErrIs: dbw.ErrInvalidParameter,
 		},
+		{
+			name: "not a slice",
+			rw:   testRw,
+			args: args{
+				createItems: "not a slice",
+			},
+			wantErr:   true,
+			wantErrIs: dbw.ErrInvalidParameter,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -663,13 +646,14 @@ func TestDb_CreateItems(t *testing.T) {
 				return
 			}
 			require.NoError(err)
-			for _, item := range tt.args.createItems {
+			val := reflect.ValueOf(tt.args.createItems)
+			for i := 0; i < val.Len(); i++ {
 				u := dbtest.AllocTestUser()
-				u.PublicId = item.(*dbtest.TestUser).PublicId
+				u.PublicId = val.Index(i).Interface().(*dbtest.TestUser).PublicId
 				err := tt.rw.LookupByPublicId(context.Background(), &u)
 				assert.NoError(err)
-				if _, ok := item.(*dbtest.TestUser); ok {
-					assert.Truef(proto.Equal(item.(*dbtest.TestUser).StoreTestUser, u.StoreTestUser), "%s and %s should be equal", item, u)
+				if _, ok := val.Index(i).Interface().(*dbtest.TestUser); ok {
+					assert.Truef(proto.Equal(val.Index(i).Interface().(*dbtest.TestUser).StoreTestUser, u.StoreTestUser), "%s and %s should be equal", val.Index(i).Interface().(*dbtest.TestUser), u)
 				}
 			}
 		})
@@ -684,7 +668,7 @@ func TestDb_CreateItems(t *testing.T) {
 			{"after-create", &dbtest.TestWithAfterCreate{}, "gorm callback/hooks are not supported"},
 			{"before-save", &dbtest.TestWithBeforeSave{}, "gorm callback/hooks are not supported"},
 			{"before-save", &dbtest.TestWithAfterSave{}, "gorm callback/hooks are not supported"},
-			{"nil", nil, "missing interface"},
+			{"nil", nil, "unable to determine type of item"},
 		}
 		for _, tt := range hookTests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -697,6 +681,222 @@ func TestDb_CreateItems(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestDb_CreateItems_OnConflict(t *testing.T) {
+	ctx := context.Background()
+	conn, _ := dbw.TestSetup(t)
+	rw := dbw.New(conn)
+	dbType, _, err := conn.DbType()
+	require.NoError(t, err)
+
+	createInitialUser := func() *dbtest.TestUser {
+		// create initial user for on conflict tests
+		id, err := dbw.NewId("test-user")
+		require.NoError(t, err)
+		initialUser, err := dbtest.NewTestUser()
+		require.NoError(t, err)
+		ts := &dbtest.Timestamp{Timestamp: timestamppb.Now()}
+		initialUser.CreateTime = ts
+		initialUser.UpdateTime = ts
+		initialUser.Name = "foo-" + id
+		err = rw.Create(ctx, initialUser)
+		require.NoError(t, err)
+		assert.NotEmpty(t, initialUser.PublicId)
+		assert.Equal(t, uint32(1), initialUser.Version)
+		return initialUser
+	}
+
+	createOnConflictUsers := func(t *testing.T, name string) []*dbtest.TestUser {
+		require := require.New(t)
+		var conflictUsers []*dbtest.TestUser
+		for i := 0; i < 10; i++ {
+			initialUser := createInitialUser()
+			conflictUser, err := dbtest.NewTestUser()
+			require.NoError(err)
+			userNameId, err := dbw.NewId(name + strconv.Itoa(i))
+			require.NoError(err)
+			conflictUser.PublicId = initialUser.PublicId
+			conflictUser.Name = userNameId
+			conflictUsers = append(conflictUsers, conflictUser)
+		}
+		return conflictUsers
+	}
+
+	tests := []struct {
+		name            string
+		onConflict      dbw.OnConflict
+		setup           func(t *testing.T, name string) []*dbtest.TestUser
+		additionalOpts  []dbw.Option
+		wantUpdate      bool
+		wantEmail       string
+		withDebug       bool
+		wantErrContains string
+	}{
+		{
+			name: "simple",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: true,
+		},
+		{
+			name: "do-nothing",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.DoNothing(true),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: false,
+		},
+		{
+			name: "update-all",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.UpdateAll(true),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: true,
+		},
+		{
+			name: "on-constraint",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Constraint("db_test_user_pkey"),
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: true,
+		},
+		{
+			name: "err-vet-for-write",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup: func(t *testing.T, name string) []*dbtest.TestUser {
+				var conflictUsers []*dbtest.TestUser
+				for i := 0; i < 10; i++ {
+					conflictUser := dbtest.AllocTestUser()
+					conflictUsers = append(conflictUsers, &conflictUser)
+				}
+				return conflictUsers
+			},
+			wantErrContains: "dbtest.(TestUser).VetForWrite: missing public id: invalid parameter",
+		},
+		{
+			name: "invalid-conflict-target",
+			onConflict: dbw.OnConflict{
+				Target: "invalid",
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup:           createOnConflictUsers,
+			wantErrContains: "dbw.CreateItems: invalid conflict target string: invalid parameter",
+		},
+		{
+			name: "with-version-success",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: true,
+			additionalOpts: []dbw.Option{
+				dbw.WithVersion(func() *uint32 { i := uint32(1); return &i }()),
+			},
+		},
+		{
+			name: "with-version-fail",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.SetColumns([]string{"name"}),
+			},
+			setup:      createOnConflictUsers,
+			wantUpdate: false,
+			additionalOpts: []dbw.Option{
+				dbw.WithVersion(func() *uint32 { i := uint32(10000); return &i }()),
+			},
+		},
+		{
+			name: "with-expr-default",
+			onConflict: dbw.OnConflict{
+				Target: dbw.Columns{"public_id"},
+				Action: dbw.SetColumnValues(map[string]interface{}{
+					"name":         dbw.Expr("lower(?)", "test with expr and default "),
+					"email":        "alice@gmail.com",
+					"phone_number": dbw.Expr("NULL"),
+				}),
+			},
+			setup: func(t *testing.T, name string) []*dbtest.TestUser {
+				require := require.New(t)
+				initialUser := createInitialUser()
+				conflictUser, err := dbtest.NewTestUser()
+				require.NoError(err)
+				conflictUser.PublicId = initialUser.PublicId
+				return []*dbtest.TestUser{conflictUser}
+			},
+			additionalOpts: []dbw.Option{},
+			wantUpdate:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if dbType == dbw.Sqlite {
+				// sqlite doesn't support "on conflict on constraint" targets
+				if _, ok := tt.onConflict.Target.(dbw.Constraint); ok {
+					return
+				}
+			}
+			assert, require := assert.New(t), require.New(t)
+			var conflictUsers []*dbtest.TestUser
+			if tt.setup != nil {
+				conflictUsers = tt.setup(t, tt.name)
+			}
+			var rowsAffected int64
+			opts := []dbw.Option{dbw.WithOnConflict(&tt.onConflict), dbw.WithReturnRowsAffected(&rowsAffected)}
+			if tt.additionalOpts != nil {
+				opts = append(opts, tt.additionalOpts...)
+			}
+			if tt.withDebug {
+				conn.Debug(true)
+			}
+			err = rw.CreateItems(ctx, conflictUsers, opts...)
+			if tt.withDebug {
+				conn.Debug(false)
+			}
+			if tt.wantErrContains != "" {
+				require.Error(err)
+				assert.Contains(err.Error(), tt.wantErrContains)
+				return
+			}
+			require.NoError(err)
+			if tt.wantUpdate {
+				assert.GreaterOrEqual(int64(10), rowsAffected)
+			} else {
+				assert.Equal(int64(0), rowsAffected)
+			}
+			for _, conflictUser := range conflictUsers {
+				foundUser, err := dbtest.NewTestUser()
+				require.NoError(err)
+				foundUser.PublicId = conflictUser.PublicId
+				err = rw.LookupByPublicId(context.Background(), foundUser)
+				require.NoError(err)
+				t.Log(foundUser)
+				if tt.wantUpdate {
+					assert.Equal(conflictUser.PublicId, foundUser.PublicId)
+					assert.Equal(conflictUser.Name, foundUser.Name)
+					if tt.wantEmail != "" {
+						assert.Equal(tt.wantEmail, foundUser.Email)
+					}
+				} else {
+					assert.Equal(int64(0), rowsAffected)
+					assert.Equal(conflictUser.PublicId, foundUser.PublicId)
+					assert.NotEqual(conflictUser.Name, foundUser.Name)
+				}
+			}
+		})
+	}
 }
 
 type dbTestUpdateAll struct {

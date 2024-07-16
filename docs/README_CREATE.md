@@ -14,7 +14,7 @@ err = rw.Create(ctx, &user, dbw.WithRowsAffected(&rowsAffected))
 ## [RW.CreateItems(...)](https://pkg.go.dev/github.com/hashicorp/go-dbw#RW.CreateItems) example with multiple items
 ```go
 var rowsAffected int64
-err = rw.CreateItems(ctx,[]interface{}{&user1, &user2}, dbw.WithRowsAffected(&rowsAffected))  
+err = rw.CreateItems(ctx, []*dbtest.TestUser{&user1, &user2}, dbw.WithRowsAffected(&rowsAffected))  
 ```
 
 
