@@ -65,7 +65,7 @@
 				
 				<option value="file4">github.com/hashicorp/go-dbw/db.go (91.8%)</option>
 				
-				<option value="file5">github.com/hashicorp/go-dbw/delete.go (97.0%)</option>
+				<option value="file5">github.com/hashicorp/go-dbw/delete.go (95.7%)</option>
 				
 				<option value="file6">github.com/hashicorp/go-dbw/do_tx.go (87.5%)</option>
 				
@@ -472,8 +472,15 @@ const (
 
         // DefaultBatchSize is the default batch size for bulk operations like
         // CreateItems. This value is used if the caller does not specify a size
-        // using the WithBatchSize(...) option.
-        DefaultBatchSize = 100
+        // using the WithBatchSize(...) option. Note: some databases have a limit
+        // on the number of query parameters (postgres is currently 64k and sqlite
+        // is 32k) and/or size of a SQL statement (sqlite is currently 1bn bytes),
+        // so this value should be set to a value that is less than the limits for
+        // your target db.
+        // See:
+        //         - https://www.postgresql.org/docs/current/limits.html
+        //        - https://www.sqlite.org/limits.html
+        DefaultBatchSize = 1000
 )
 
 // VetForWriter provides an interface that Create and Update can use to vet the
@@ -682,12 +689,12 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
                                 }</span>
                         }
                 }
+        }
 
-                <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
-                        if err := opts.WithBeforeWrite(valCreateItems.Index(i).Interface()); err != nil </span><span class="cov8" title="1">{
-                                return fmt.Errorf("%s: error before write: %w", op, err)
-                        }</span>
-                }
+        <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
+                if err := opts.WithBeforeWrite(createItems); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error before write: %w", op, err)
+                }</span>
         }
 
         <span class="cov8" title="1">db := rw.underlying.wrapped.WithContext(ctx)
@@ -760,11 +767,9 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
                 *opts.WithRowsAffected = tx.RowsAffected
         }</span>
         <span class="cov8" title="1">if tx.RowsAffected &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
-                for i := 0; i &lt; valCreateItems.Len(); i++ </span><span class="cov8" title="1">{
-                        if err := opts.WithAfterWrite(valCreateItems.Index(i).Interface(), int(tx.RowsAffected)); err != nil </span><span class="cov8" title="1">{
-                                return fmt.Errorf("%s: error after write: %w", op, err)
-                        }</span>
-                }
+                if err := opts.WithAfterWrite(createItems, int(tx.RowsAffected)); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("%s: error after write: %w", op, err)
+                }</span>
         }
         <span class="cov8" title="1">return nil</span>
 }
@@ -1152,55 +1157,116 @@ func (rw *RW) Delete(ctx context.Context, i interface{}, opt ...Option) (int, er
 }
 
 // DeleteItems will delete multiple items of the same type. Options supported:
-// WithDebug, WithTable
-func (rw *RW) DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
+// WithWhereClause, WithDebug, WithTable
+func (rw *RW) DeleteItems(ctx context.Context, deleteItems interface{}, opt ...Option) (int, error) <span class="cov8" title="1">{
         const op = "dbw.DeleteItems"
-        if rw.underlying == nil </span><span class="cov8" title="1">{
-                return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)
-        }</span>
-        <span class="cov8" title="1">if len(deleteItems) == 0 </span><span class="cov8" title="1">{
-                return noRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)
-        }</span>
+        switch </span>{
+        case rw.underlying == nil:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: missing underlying db: %w", op, ErrInvalidParameter)</span>
+        case isNil(deleteItems):<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: no interfaces to delete: %w", op, ErrInvalidParameter)</span>
+        }
+        <span class="cov8" title="1">valDeleteItems := reflect.ValueOf(deleteItems)
+        switch </span>{
+        case valDeleteItems.Kind() != reflect.Slice:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: not a slice: %w", op, ErrInvalidParameter)</span>
+        case valDeleteItems.Len() == 0:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: missing items: %w", op, ErrInvalidParameter)</span>
+
+        }
         <span class="cov8" title="1">if err := raiseErrorOnHooks(deleteItems); err != nil </span><span class="cov8" title="1">{
                 return noRowsAffected, fmt.Errorf("%s: %w", op, err)
         }</span>
+
         <span class="cov8" title="1">opts := GetOpts(opt...)
-        if opts.WithLookup </span><span class="cov8" title="1">{
-                return noRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)
-        }</span>
-        // verify that createItems are all the same type.
-        <span class="cov8" title="1">var foundType reflect.Type
-        for i, v := range deleteItems </span><span class="cov8" title="1">{
-                if i == 0 </span><span class="cov8" title="1">{
-                        foundType = reflect.TypeOf(v)
-                }</span>
-                <span class="cov8" title="1">currentType := reflect.TypeOf(v)
-                if foundType != currentType </span><span class="cov8" title="1">{
-                        return noRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)
-                }</span>
+        switch </span>{
+        case opts.WithLookup:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: with lookup not a supported option: %w", op, ErrInvalidParameter)</span>
+        case opts.WithVersion != nil:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: with version is not a supported option: %w", op, ErrInvalidParameter)</span>
         }
+
+        // we need to dig out the stmt so in just a sec we can make sure the PKs are
+        // set for all the items, so we'll just use the first item to do so.
+        <span class="cov8" title="1">mDb := rw.underlying.wrapped.Model(valDeleteItems.Index(0).Interface())
+        err := mDb.Statement.Parse(valDeleteItems.Index(0).Interface())
+        switch </span>{
+        case err != nil:<span class="cov8" title="1">
+                return noRowsAffected, fmt.Errorf("%s: (internal error) error parsing stmt: %w", op, err)</span>
+        case err == nil &amp;&amp; mDb.Statement.Schema == nil:<span class="cov0" title="0">
+                return noRowsAffected, fmt.Errorf("%s: (internal error) unable to parse stmt: %w", op, ErrUnknown)</span>
+        }
+
+        // verify that deleteItems are all the same type, among a myriad of
+        // other things on the set of items
+        <span class="cov8" title="1">var foundType reflect.Type
+
+        for i := 0; i &lt; valDeleteItems.Len(); i++ </span><span class="cov8" title="1">{
+                if i == 0 </span><span class="cov8" title="1">{
+                        foundType = reflect.TypeOf(valDeleteItems.Index(i).Interface())
+                }</span>
+                <span class="cov8" title="1">currentType := reflect.TypeOf(valDeleteItems.Index(i).Interface())
+                switch </span>{
+                case isNil(valDeleteItems.Index(i).Interface()) || currentType == nil:<span class="cov8" title="1">
+                        return noRowsAffected, fmt.Errorf("%s: unable to determine type of item %d: %w", op, i, ErrInvalidParameter)</span>
+                case foundType != currentType:<span class="cov8" title="1">
+                        return noRowsAffected, fmt.Errorf("%s: items contain disparate types.  item %d is not a %s: %w", op, i, foundType.Name(), ErrInvalidParameter)</span>
+                }
+                <span class="cov8" title="1">if opts.WithWhereClause == "" </span><span class="cov8" title="1">{
+                        // make sure the PK is set for the current item
+                        reflectValue := reflect.Indirect(reflect.ValueOf(valDeleteItems.Index(i).Interface()))
+                        for _, pf := range mDb.Statement.Schema.PrimaryFields </span><span class="cov8" title="1">{
+                                if _, isZero := pf.ValueOf(ctx, reflectValue); isZero </span><span class="cov8" title="1">{
+                                        return noRowsAffected, fmt.Errorf("%s: primary key %s is not set: %w", op, pf.Name, ErrInvalidParameter)
+                                }</span>
+                        }
+                }
+        }
+
         <span class="cov8" title="1">if opts.WithBeforeWrite != nil </span><span class="cov8" title="1">{
                 if err := opts.WithBeforeWrite(deleteItems); err != nil </span><span class="cov8" title="1">{
                         return noRowsAffected, fmt.Errorf("%s: error before write: %w", op, err)
                 }</span>
         }
-        <span class="cov8" title="1">rowsDeleted := 0
-        for _, item := range deleteItems </span><span class="cov8" title="1">{
-                cnt, err := rw.Delete(ctx, item,
-                        WithDebug(opts.WithDebug),
-                        WithTable(opts.WithTable),
-                )
-                rowsDeleted += cnt
-                if err != nil </span><span class="cov8" title="1">{
-                        return rowsDeleted, fmt.Errorf("%s: %w", op, err)
+
+        <span class="cov8" title="1">db := rw.underlying.wrapped.WithContext(ctx)
+        if opts.WithDebug </span><span class="cov8" title="1">{
+                db = db.Debug()
+        }</span>
+
+        <span class="cov8" title="1">if opts.WithWhereClause != "" </span><span class="cov8" title="1">{
+                where, args, err := rw.whereClausesFromOpts(ctx, valDeleteItems.Index(0).Interface(), opts)
+                if err != nil </span><span class="cov0" title="0">{
+                        return noRowsAffected, fmt.Errorf("%s: %w", op, err)
+                }</span>
+                <span class="cov8" title="1">db = db.Where(where, args...)</span>
+        }
+
+        <span class="cov8" title="1">switch </span>{
+        case opts.WithTable != "":<span class="cov8" title="1">
+                db = db.Table(opts.WithTable)</span>
+        default:<span class="cov8" title="1">
+                tabler, ok := valDeleteItems.Index(0).Interface().(tableNamer)
+                if ok </span><span class="cov8" title="1">{
+                        db = db.Table(tabler.TableName())
                 }</span>
         }
-        <span class="cov8" title="1">if rowsDeleted &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
+
+        <span class="cov8" title="1">db = db.Delete(deleteItems)
+        if db.Error != nil </span><span class="cov8" title="1">{
+                return noRowsAffected, fmt.Errorf("%s: %w", op, db.Error)
+        }</span>
+        <span class="cov8" title="1">rowsDeleted := int(db.RowsAffected)
+        if rowsDeleted &gt; 0 &amp;&amp; opts.WithAfterWrite != nil </span><span class="cov8" title="1">{
                 if err := opts.WithAfterWrite(deleteItems, int(rowsDeleted)); err != nil </span><span class="cov8" title="1">{
                         return rowsDeleted, fmt.Errorf("%s: error after write: %w", op, err)
                 }</span>
         }
         <span class="cov8" title="1">return rowsDeleted, nil</span>
+}
+
+type tableNamer interface {
+        TableName() string
 }
 </pre>
 		
@@ -1245,7 +1311,7 @@ func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, 
 
                 newRW := &amp;RW{underlying: &amp;DB{newTx}}
                 if err := handler(newRW, newRW); err != nil </span><span class="cov8" title="1">{
-                        if err := newTx.Rollback().Error; err != nil </span><span class="cov0" title="0">{
+                        if err := newTx.Rollback().Error; err != nil </span><span class="cov8" title="1">{
                                 return info, fmt.Errorf("%s: %w", op, err)
                         }</span>
                         <span class="cov8" title="1">if retry := retryErrorsMatchingFn(err); retry </span><span class="cov8" title="1">{
@@ -1253,7 +1319,7 @@ func (rw *RW) DoTx(ctx context.Context, retryErrorsMatchingFn func(error) bool, 
                                 info.Retries++
                                 info.Backoff = info.Backoff + d
                                 select </span>{
-                                case &lt;-ctx.Done():<span class="cov8" title="1">
+                                case &lt;-ctx.Done():<span class="cov0" title="0">
                                         return info, fmt.Errorf("%s: cancelled: %w", op, err)</span>
                                 case &lt;-time.After(d):<span class="cov8" title="1">
                                         continue</span>
@@ -1815,7 +1881,7 @@ func isNil(i interface{}) bool <span class="cov8" title="1">{
                 return true
         }</span>
         <span class="cov8" title="1">switch reflect.TypeOf(i).Kind() </span>{
-        case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:<span class="cov8" title="1">
+        case reflect.Ptr, reflect.Map, reflect.Chan, reflect.Slice:<span class="cov8" title="1">
                 return reflect.ValueOf(i).IsNil()</span>
         }
         <span class="cov8" title="1">return false</span>

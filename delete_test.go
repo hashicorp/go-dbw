@@ -6,12 +6,14 @@ package dbw_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/go-dbw"
 	"github.com/hashicorp/go-dbw/internal/dbtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm/schema"
 )
 
 func TestDb_Delete(t *testing.T) {
@@ -278,8 +280,8 @@ func TestDb_DeleteItems(t *testing.T) {
 	testWithTableUser, err := dbtest.NewTestUser()
 	require.NoError(t, err)
 
-	createFn := func() []interface{} {
-		results := []interface{}{}
+	createFn := func() interface{} {
+		results := []*dbtest.TestUser{}
 		for i := 0; i < 10; i++ {
 			u := testUser(t, testRw, "", "", "")
 			results = append(results, u)
@@ -312,8 +314,9 @@ func TestDb_DeleteItems(t *testing.T) {
 	}
 
 	type args struct {
-		deleteItems []interface{}
-		opt         []dbw.Option
+		deleteItems    interface{}
+		opt            []dbw.Option
+		deleteItemsIds []string
 	}
 	tests := []struct {
 		name            string
@@ -324,12 +327,14 @@ func TestDb_DeleteItems(t *testing.T) {
 		wantOplogMsgs   bool
 		wantErr         bool
 		wantErrIs       error
+		wantErrContains string
 	}{
 		{
 			name: "simple",
 			rw:   dbw.New(db),
 			args: args{
 				deleteItems: createFn(),
+				opt:         []dbw.Option{dbw.WithDebug(true)},
 			},
 			wantRowsDeleted: 10,
 			wantErr:         false,
@@ -343,6 +348,36 @@ func TestDb_DeleteItems(t *testing.T) {
 			},
 			wantRowsDeleted: 10,
 			wantErr:         false,
+		},
+		{
+			name: "success-WithWhereClause",
+			rw:   dbw.New(db),
+			args: func() args {
+				users := []*dbtest.TestUser{}
+				for i := 0; i < 10; i++ {
+					u := testUser(t, testRw, fmt.Sprintf("name-%d", i), "", "")
+					users = append(users, u)
+				}
+				return args{
+					deleteItems: users,
+					opt: []dbw.Option{
+						dbw.WithWhere("name in(?,?)", "name-0", "name-1"),
+						dbw.WithDebug(true),
+					},
+					deleteItemsIds: []string{users[0].PublicId, users[1].PublicId},
+				}
+			}(),
+			wantRowsDeleted: 2,
+		},
+		{
+			name: "err-bad-where-clause",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: createFn(),
+				opt:         []dbw.Option{dbw.WithWhere("not a valid where clause")},
+			},
+			wantErr:         true,
+			wantErrContains: "syntax error",
 		},
 		{
 			name: "with-table-fail",
@@ -436,6 +471,66 @@ func TestDb_DeleteItems(t *testing.T) {
 			wantErr:   true,
 			wantErrIs: dbw.ErrInvalidParameter,
 		},
+		{
+			name: "err-not-slice",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: "not-a-slice",
+			},
+			wantErr:         true,
+			wantErrIs:       dbw.ErrInvalidParameter,
+			wantErrContains: "not a slice",
+		},
+		{
+			name: "err-WithVersion",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: createFn(),
+				opt:         []dbw.Option{dbw.WithVersion(func() *uint32 { i := uint32(1); return &i }())},
+			},
+			wantErr:         true,
+			wantErrIs:       dbw.ErrInvalidParameter,
+			wantErrContains: "with version is not a supported option",
+		},
+		{
+			name: "err-parse-stmt",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: []int{1, 2, 3},
+			},
+			wantErr:         true,
+			wantErrIs:       schema.ErrUnsupportedDataType,
+			wantErrContains: "error parsing stmt: unsupported data type",
+		},
+		{
+			name: "err-slice-contains-nil-item",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: func() interface{} {
+					items := createFn()
+					items = append(items.([]*dbtest.TestUser), nil)
+					return items
+				}(),
+			},
+			wantErr:         true,
+			wantErrIs:       dbw.ErrInvalidParameter,
+			wantErrContains: "unable to determine type of item ",
+		},
+		{
+			name: "err-empty-pk",
+			rw:   dbw.New(db),
+			args: args{
+				deleteItems: func() interface{} {
+					items := createFn()
+					users := items.([]*dbtest.TestUser)
+					users[len(users)-1].PublicId = ""
+					return items
+				}(),
+			},
+			wantErr:         true,
+			wantErrIs:       dbw.ErrInvalidParameter,
+			wantErrContains: "primary key PublicId is not set",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -445,14 +540,27 @@ func TestDb_DeleteItems(t *testing.T) {
 				require.Error(err)
 				if tt.wantErrIs != nil {
 					assert.ErrorIs(err, tt.wantErrIs)
+					fmt.Printf("error is: %T\n", errors.Unwrap(err))
+				}
+				if tt.wantErrContains != "" {
+					assert.ErrorContains(err, tt.wantErrContains)
 				}
 				return
 			}
 			require.NoError(err)
 			assert.Equal(tt.wantRowsDeleted, rowsDeleted)
-			for _, item := range tt.args.deleteItems {
+			var deletedIds []string
+			switch {
+			case len(tt.args.deleteItemsIds) > 0:
+				deletedIds = tt.args.deleteItemsIds
+			default:
+				for _, item := range tt.args.deleteItems.([]*dbtest.TestUser) {
+					deletedIds = append(deletedIds, item.PublicId)
+				}
+			}
+			for _, id := range deletedIds {
 				u := dbtest.AllocTestUser()
-				u.PublicId = item.(*dbtest.TestUser).PublicId
+				u.PublicId = id
 				err := tt.rw.LookupByPublicId(context.Background(), &u)
 				require.Error(err)
 				assert.ErrorIs(err, dbw.ErrRecordNotFound)

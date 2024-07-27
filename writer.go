@@ -54,7 +54,7 @@ type Writer interface {
 	// is returned the caller must decide what to do with the transaction, which
 	// almost always should be to rollback. Delete returns the number of rows
 	// deleted or an error.
-	DeleteItems(ctx context.Context, deleteItems []interface{}, opt ...Option) (int, error)
+	DeleteItems(ctx context.Context, deleteItems interface{}, opt ...Option) (int, error)
 
 	// Exec will execute the sql with the values as parameters. The int returned
 	// is the number of rows affected by the sql. No options are currently
