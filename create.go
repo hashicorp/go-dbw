@@ -248,11 +248,11 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
 				}
 			}
 		}
+	}
 
-		if opts.WithBeforeWrite != nil {
-			if err := opts.WithBeforeWrite(valCreateItems.Index(i).Interface()); err != nil {
-				return fmt.Errorf("%s: error before write: %w", op, err)
-			}
+	if opts.WithBeforeWrite != nil {
+		if err := opts.WithBeforeWrite(createItems); err != nil {
+			return fmt.Errorf("%s: error before write: %w", op, err)
 		}
 	}
 
@@ -326,10 +326,8 @@ func (rw *RW) CreateItems(ctx context.Context, createItems interface{}, opt ...O
 		*opts.WithRowsAffected = tx.RowsAffected
 	}
 	if tx.RowsAffected > 0 && opts.WithAfterWrite != nil {
-		for i := 0; i < valCreateItems.Len(); i++ {
-			if err := opts.WithAfterWrite(valCreateItems.Index(i).Interface(), int(tx.RowsAffected)); err != nil {
-				return fmt.Errorf("%s: error after write: %w", op, err)
-			}
+		if err := opts.WithAfterWrite(createItems, int(tx.RowsAffected)); err != nil {
+			return fmt.Errorf("%s: error after write: %w", op, err)
 		}
 	}
 	return nil
