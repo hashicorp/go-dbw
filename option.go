@@ -77,7 +77,9 @@ type Options struct {
 	WithPrngValues []string
 
 	// WithLogger specifies an optional hclog to use for db operations.  It's only
-	// valid for Open(..) and OpenWith(...)
+	// valid for Open(..) and OpenWith(...) The logger provided can optionally
+	// implement the LogWriter interface as well which would override the default
+	// behavior for a logger (the default only emits postgres errors)
 	WithLogger hclog.Logger
 
 	// WithMinOpenConnections specifies and optional min open connections for the
@@ -214,7 +216,9 @@ func WithPrngValues(withPrngValues []string) Option {
 }
 
 // WithLogger specifies an optional hclog to use for db operations.  It's only
-// valid for Open(..) and OpenWith(...)
+// valid for Open(..) and OpenWith(...). The logger provided can optionally
+// implement the LogWriter interface as well which would override the default
+// behavior for a logger (the default only emits postgres errors)
 func WithLogger(l hclog.Logger) Option {
 	return func(o *Options) {
 		o.WithLogger = l

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/hashicorp/go-dbw"
@@ -137,6 +139,43 @@ func TestDB_OpenWith(t *testing.T) {
 		_, err := dbw.OpenWith(sqlite.Open("file::memory:"), nil)
 		assert.NoError(err)
 	})
+	t.Run("sqlite-with-logger", func(t *testing.T) {
+		assert, require := assert.New(t), require.New(t)
+		buf := new(strings.Builder)
+		testLock := &sync.Mutex{}
+		testLogger := hclog.New(&hclog.LoggerOptions{
+			Mutex:      testLock,
+			Name:       "test",
+			JSONFormat: true,
+			Output:     buf,
+			Level:      hclog.Debug,
+		})
+		d, err := dbw.OpenWith(sqlite.Open("file::memory:"), dbw.WithLogger(gormDebugLogger{Logger: testLogger}), dbw.WithDebug(true))
+		require.NoError(err)
+		require.NotEmpty(d)
+		rw := dbw.New(d)
+		const sql = "select 'hello world'"
+		testCtx := context.Background()
+		rows, err := rw.Query(testCtx, sql, nil)
+		require.NoError(err)
+		defer rows.Close()
+		assert.Contains(buf.String(), sql)
+		t.Log(buf.String())
+	})
+}
+
+type gormDebugLogger struct {
+	hclog.Logger
+}
+
+func (g gormDebugLogger) Printf(msg string, values ...interface{}) {
+	b := new(strings.Builder)
+	fmt.Fprintf(b, msg, values...)
+	g.Debug(b.String())
+}
+
+func getGormLogger(log hclog.Logger) gormDebugLogger {
+	return gormDebugLogger{Logger: log}
 }
 
 func TestDB_StringToDbType(t *testing.T) {
