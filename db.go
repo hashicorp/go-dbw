@@ -209,13 +209,21 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 	}
 	opts := GetOpts(opt...)
 	if opts.WithLogger != nil {
-		newLogger := logger.New(
-			getGormLogger(opts.WithLogger),
-			logger.Config{
-				LogLevel: logger.LogLevel(opts.withLogLevel), // Log level
-				Colorful: false,                              // Disable color
-			},
-		)
+		var newLogger logger.Interface
+		loggerConfig := logger.Config{
+			LogLevel: logger.LogLevel(opts.withLogLevel), // Log level
+			Colorful: false,                              // Disable color
+		}
+		switch v := opts.WithLogger.(type) {
+		case LogWriter:
+			// it's already a gorm logger, so we just need to configure it
+			newLogger = logger.New(v, loggerConfig)
+		default:
+			newLogger = logger.New(
+				getGormLogger(opts.WithLogger), // wrap the hclog with a gorm logger that only logs errors
+				loggerConfig,
+			)
+		}
 		db = db.Session(&gorm.Session{Logger: newLogger})
 	}
 	if opts.WithMaxOpenConnections > 0 {
@@ -228,7 +236,17 @@ func openDialector(dialect gorm.Dialector, opt ...Option) (*DB, error) {
 		}
 		underlyingDB.SetMaxOpenConns(opts.WithMaxOpenConnections)
 	}
-	return &DB{wrapped: db}, nil
+
+	ret := &DB{wrapped: db}
+	ret.Debug(opts.WithDebug)
+	return ret, nil
+}
+
+// LogWriter defines an interface which can be used when passing a logger via
+// WithLogger(...).  This interface allows callers to override the default
+// behavior for a logger (the default only emits postgres errors)
+type LogWriter interface {
+	Printf(string, ...any)
 }
 
 type gormLogger struct {
