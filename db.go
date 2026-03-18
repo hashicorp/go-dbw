@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	_ "github.com/jackc/pgx/v5" // required to load postgres drivers
 	"gorm.io/driver/postgres"
