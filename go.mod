@@ -1,6 +1,6 @@
 module github.com/hashicorp/go-dbw
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-secure-stdlib/base62 v0.1.2
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/oligot/go-mod-upgrade v0.6.1
 	github.com/stretchr/testify v1.11.1
 	github.com/xo/dburl v0.23.7
